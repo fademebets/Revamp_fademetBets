@@ -52,7 +52,7 @@ export default function JoinCommunitySection() {
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="bg-[#a1cf5f] hover:bg-[#8fc04d] text-black font-medium px-5 py-2 rounded text-sm flex items-center"
+                  className="bg-primary  text-white px-5 py-2 text-sm rounded-lg font-medium flex items-center"
                 >
                   Submit
                   <ArrowUpRight className="h-4 w-4 ml-2"/>
