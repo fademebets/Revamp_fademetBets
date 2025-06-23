@@ -100,12 +100,7 @@ export function LoginForm({
                 >
                   <LogIn className="mr-2 h-5 w-5" /> Login
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full border-red-500 text-red-600 hover:bg-red-50 h-12 text-base font-semibold"
-                >
-                  Login with Google
-                </Button>
+
               </div>
             </div>
 
