@@ -60,7 +60,7 @@ export default function Navbar() {
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center space-x-4">
           <LanguageSelector language={language} setLanguage={setLanguage} />
-          <Button className="bg-primary text-white px-5 py-2 text-sm rounded-lg">
+          <Button  className="bg-primary text-white px-5 py-2 text-sm rounded-lg">
             Login Now
           </Button>
         </div>
