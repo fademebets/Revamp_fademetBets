@@ -5,7 +5,7 @@ import { useState } from "react"
 
 import { Sidebar } from "./dashboard/_components/layout/sidebar"
 import { Header } from "./dashboard/_components/layout/header"
-// import { LogoutOverlay } from "@/components/ui/logout-overlay"
+import { LogoutOverlay } from "@/components/ui/logout-overlay"
 
 export default function DoctorLayout({
   children,
@@ -43,7 +43,7 @@ export default function DoctorLayout({
       </div>
 
       {/* Logout overlay here */}
-      {/* <LogoutOverlay isLoggingOut={isLoggingOut} /> */}
+      <LogoutOverlay isLoggingOut={isLoggingOut} />
     </div>
   )
 }
