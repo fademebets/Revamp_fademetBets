@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -128,12 +128,17 @@ export function LockAdmin() {
       {/* Main Form Card */}
       <Card className="bg-white shadow-xl border-0 ring-1 p-0 ring-gray-200">
         <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-t-xl border-b border-gray-200">
-          <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-            <div className="p-1.5 bg-red-500 rounded-md">
-              <Target className="h-5 w-5 text-white" />
-            </div>
-            Create Lock of the Day
-          </CardTitle>
+          <div className="space-y-2">
+            <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              <div className="p-1.5 bg-red-500 rounded-md">
+                <Target className="h-5 w-5 text-white" />
+              </div>
+              Create Lock of the Day
+            </CardTitle>
+            <CardDescription className="text-zinc-600 ml-10">
+              Add a new Lock pick with detailed analysis and projections
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent className="p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
