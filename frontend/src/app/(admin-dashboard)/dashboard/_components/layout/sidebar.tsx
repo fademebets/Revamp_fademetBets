@@ -11,6 +11,7 @@ import {
   BadgeDollarSign,
   Users2,
   AudioWaveformIcon,
+  PaperclipIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
@@ -38,6 +39,7 @@ const navLinks = [
     links: [
       { title: "Total Sales", href: "/total-sales", icon: BadgeDollarSign },
       { title: "All Users", href: "/all-user", icon: Users2 },
+      { title: "Blogs", href: "/blog", icon: PaperclipIcon },
     ],
   },
   {
