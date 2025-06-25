@@ -20,6 +20,7 @@ export default function EvPicks() {
     odds: "",
     evValue: "",
     coverPercentage: "",
+      units: "",
   })
 
   const handleInputChange = (field: string, value: string) => {
@@ -36,7 +37,7 @@ export default function EvPicks() {
   }
 
   const isFormValid =
-    formData.title && formData.description && formData.odds && formData.evValue && formData.coverPercentage
+    formData.title && formData.description && formData.odds && formData.evValue && formData.coverPercentage && formData.units
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -152,6 +153,26 @@ export default function EvPicks() {
                     className="text-lg p-4 border-2 focus:border-emerald-500 transition-colors"
                   />
                   <p className="text-xs text-slate-500">Expected value calculation</p>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-purple-600" />
+                    <Label htmlFor="units" className="font-semibold text-slate-900">
+                      Units
+                    </Label>
+                  </div>
+                  <Input
+                    id="units"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    placeholder="1.5"
+                    value={formData.units}
+                    onChange={(e) => handleInputChange("units", e.target.value)}
+                    className="text-lg p-4 border-2 focus:border-purple-500 transition-colors"
+                  />
+                  <p className="text-xs text-slate-500">Stake size in units (1-5% of bankroll)</p>
                 </div>
 
                 {/* Cover Percentage */}

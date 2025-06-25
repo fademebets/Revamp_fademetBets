@@ -27,24 +27,19 @@ const navItems = [
   },
   {
     title: "EV Picks",
-    url: "",
+    url: "/user-picks",
     icon: Zap,
     description: "Expert verified picks",
 
   },
   {
     title: "Lock of the Day",
-    url: "",
+    url: "/user-lock-of-the-day",
     icon: Lock,
     description: "Today's guaranteed pick",
 
   },
-  {
-    title: "Settings",
-    url: "",
-    icon: Settings,
-    description: "Account preferences",
-  },
+ 
 
 ]
 

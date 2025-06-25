@@ -30,6 +30,7 @@ export function LockAdmin() {
     pick: "",
     odds: "",
     confidence: "",
+      units: "",
     analysis: "",
   })
 
@@ -53,6 +54,8 @@ export function LockAdmin() {
       pick: "",
       odds: "",
       confidence: "",
+        units: "",
+
       analysis: "",
     })
   }
@@ -239,6 +242,23 @@ export function LockAdmin() {
                   <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">%</span>
                 </div>
               </div>
+
+               <div className="space-y-2">
+                  <Label htmlFor="units" className="text-sm font-semibold text-gray-700">
+                    Units *
+                  </Label>
+                  <Input
+                    id="units"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={formData.units}
+                    onChange={(e) => handleInputChange("units", e.target.value)}
+                    placeholder="e.g., 1.5"
+                    className="h-12 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                  />
+                  <p className="text-xs text-gray-500">1-5% of bankroll typically</p>
+                </div>
             </div>
 
             {/* Analysis */}
