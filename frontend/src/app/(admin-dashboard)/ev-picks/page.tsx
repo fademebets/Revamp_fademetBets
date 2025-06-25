@@ -1,10 +1,10 @@
 import React from 'react'
-import EvPicks from './ev-picks'
+import {EvPicksAdmin} from './ev-picks'
 
 export default function page() {
   return (
     <>
-    <EvPicks />
+    <EvPicksAdmin />
     </>
   )
 }
