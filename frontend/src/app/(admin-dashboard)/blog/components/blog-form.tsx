@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import Image from "next/image"
 
 interface BlogFormProps {
   blog?: {
@@ -215,7 +216,9 @@ export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
                 </div>
                 {formData.featuredImage && (
                   <div className="aspect-video bg-muted rounded-md overflow-hidden">
-                    <img
+                    <Image
+                    width={200}
+                    height={200}
                       src={formData.featuredImage || "/placeholder.svg"}
                       alt="Featured"
                       className="w-full h-full object-cover"
