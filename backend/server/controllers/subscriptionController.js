@@ -156,8 +156,12 @@ exports.confirmSubscription = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Confirm subscription error:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    console.error('❌ Confirm subscription error:', {
+    message: error.message,
+    stack: error.stack,
+    response: error.response?.data || null
+  });
+  res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
