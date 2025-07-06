@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -49,6 +48,8 @@ export default function SubscriptionPlan() {
   const [error, setError] = useState<string | null>(null)
   const [step, setStep] = useState<"select" | "email" | "processing" | "success">("select")
   const [stripe, setStripe] = useState<any>(null)
+  const [stripeLoading, setStripeLoading] = useState(true)
+  const [stripeError, setStripeError] = useState<string | null>(null)
 
   const plans = [
     {
@@ -128,18 +129,50 @@ export default function SubscriptionPlan() {
     { icon: <Shield className="w-4 h-4" />, text: "Risk management" },
   ]
 
-  // Load Stripe on component mount
+  // Load Stripe on component mount with better error handling
   useEffect(() => {
     const loadStripe = async () => {
-      if (window.Stripe) {
-        setStripe(window.Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY))
-      } else {
-        const script = document.createElement("script")
-        script.src = "https://js.stripe.com/v3/"
-        script.onload = () => {
-          setStripe(window.Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY))
+      try {
+        setStripeLoading(true)
+        setStripeError(null)
+
+        // Check if environment variable exists
+        const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        if (!publishableKey) {
+          throw new Error("Stripe publishable key is not configured")
         }
-        document.head.appendChild(script)
+
+        if (window.Stripe) {
+          const stripeInstance = window.Stripe(publishableKey)
+          setStripe(stripeInstance)
+        } else {
+          // Load Stripe script
+          const script = document.createElement("script")
+          script.src = "https://js.stripe.com/v3/"
+          script.async = true
+
+          script.onload = () => {
+            try {
+              const stripeInstance = window.Stripe(publishableKey)
+              setStripe(stripeInstance)
+            } catch (err) {
+              console.error("Failed to initialize Stripe:", err)
+              setStripeError("Failed to initialize payment system")
+            }
+          }
+
+          script.onerror = () => {
+            console.error("Failed to load Stripe script")
+            setStripeError("Failed to load payment system")
+          }
+
+          document.head.appendChild(script)
+        }
+      } catch (err) {
+        console.error("Stripe loading error:", err)
+        setStripeError(err instanceof Error ? err.message : "Failed to load payment system")
+      } finally {
+        setStripeLoading(false)
       }
     }
 
@@ -149,36 +182,31 @@ export default function SubscriptionPlan() {
     const urlParams = new URLSearchParams(window.location.search)
     const sessionId = urlParams.get("session_id")
     const success = urlParams.get("success")
-
     if (success === "true" && sessionId) {
       handleStripeReturn(sessionId)
     }
   }, [])
 
   const handleStripeReturn = useCallback(async (sessionId: string) => {
-  setIsLoading(true)
-  setStep("processing")
-
-  try {
-    const subscriptionResponse = await confirmSubscription(sessionId)
-    setSubscriptionResult(subscriptionResponse)
-    setStep("success")
-
-    // Store the JWT token
-    if (subscriptionResponse.token) {
-      localStorage.setItem("authToken", subscriptionResponse.token)
+    setIsLoading(true)
+    setStep("processing")
+    try {
+      const subscriptionResponse = await confirmSubscription(sessionId)
+      setSubscriptionResult(subscriptionResponse)
+      setStep("success")
+      // Store the JWT token
+      if (subscriptionResponse.token) {
+        localStorage.setItem("authToken", subscriptionResponse.token)
+      }
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to confirm subscription")
+      setStep("select")
+    } finally {
+      setIsLoading(false)
     }
-
-    // Clean up URL
-    window.history.replaceState({}, document.title, window.location.pathname)
-  } catch (err) {
-    setError(err instanceof Error ? err.message : "Failed to confirm subscription")
-    setStep("select")
-  } finally {
-    setIsLoading(false)
-  }
-}, [])
-
+  }, [])
 
   const handlePlanSelect = (planType: PlanType) => {
     setSelectedPlan(planType)
@@ -199,7 +227,8 @@ export default function SubscriptionPlan() {
     })
 
     if (!response.ok) {
-      throw new Error("Failed to create checkout session")
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || "Failed to create checkout session")
     }
 
     return response.json()
@@ -217,7 +246,8 @@ export default function SubscriptionPlan() {
     })
 
     if (!response.ok) {
-      throw new Error("Failed to confirm subscription")
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || "Failed to confirm subscription")
     }
 
     return response.json()
@@ -231,8 +261,19 @@ export default function SubscriptionPlan() {
       return
     }
 
+    // Check if Stripe failed to load
+    if (stripeError) {
+      setError(`Payment system error: ${stripeError}. Please refresh the page and try again.`)
+      return
+    }
+
+    if (stripeLoading) {
+      setError("Payment system is still loading. Please wait a moment and try again.")
+      return
+    }
+
     if (!stripe) {
-      setError("Payment system is loading. Please try again.")
+      setError("Payment system is not available. Please refresh the page and try again.")
       return
     }
 
@@ -244,6 +285,10 @@ export default function SubscriptionPlan() {
       const checkoutResponse = await createCheckoutSession(email, selectedPlan)
       const { sessionId } = checkoutResponse
 
+      if (!sessionId) {
+        throw new Error("Invalid checkout session")
+      }
+
       // Redirect to Stripe Checkout
       const { error: stripeError } = await stripe.redirectToCheckout({
         sessionId: sessionId,
@@ -253,6 +298,7 @@ export default function SubscriptionPlan() {
         throw new Error(stripeError.message)
       }
     } catch (err) {
+      console.error("Checkout error:", err)
       setError(err instanceof Error ? err.message : "An error occurred during checkout")
       setIsLoading(false)
     }
@@ -337,6 +383,32 @@ export default function SubscriptionPlan() {
             )}
           </div>
 
+          {/* Show Stripe loading status */}
+          {stripeLoading && (
+            <Alert className="mb-6 border-blue-200 bg-blue-50">
+              <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+              <AlertDescription className="text-blue-800">Loading payment system...</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Show Stripe error */}
+          {stripeError && (
+            <Alert className="mb-6 border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                {stripeError}
+                <Button
+                  variant="link"
+                  className="p-0 h-auto ml-2 text-red-600 underline"
+                  onClick={() => window.location.reload()}
+                >
+                  Refresh page
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Show general error */}
           {error && (
             <Alert className="mb-6 border-red-200 bg-red-50">
               <AlertCircle className="h-4 w-4 text-red-600" />
@@ -355,6 +427,7 @@ export default function SubscriptionPlan() {
                 placeholder="Enter your email address"
                 required
                 disabled={isLoading}
+                className="w-full"
               />
             </div>
 
@@ -362,13 +435,20 @@ export default function SubscriptionPlan() {
               <Button
                 type="submit"
                 className="w-full bg-red-600 hover:bg-red-700 text-white"
-                disabled={isLoading || !email || !stripe}
+                disabled={isLoading || !email.trim() || stripeLoading || !!stripeError}
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Redirecting to Payment...
                   </>
+                ) : stripeLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Loading Payment System...
+                  </>
+                ) : stripeError ? (
+                  "Payment System Unavailable"
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4 mr-2" />
