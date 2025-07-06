@@ -2,7 +2,7 @@ const User = require('../models/User');
 const Stripe = require('stripe');
 const PRICES = require('../config/prices');
 const jwt = require('jsonwebtoken');
-const { resend } = require('../config/resend'); // assuming you have this setup
+const resend = require('../config/resend');
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
