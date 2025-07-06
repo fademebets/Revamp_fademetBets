@@ -173,7 +173,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
               <h3 className="font-semibold text-gray-900 mb-1">Written by {blog.author}</h3>
               <p className="text-sm text-muted-foreground">
                 Published on {formatDate(blog.createdAt)}
-                {blog.updatedAt !== blog.createdAt && <span> • Updated on {formatDate(blog.updatedAt)}</span>}
+                {blog.updatedAt !== blog.createdAt && <span></span>}
               </p>
             </div>
             <Button variant="outline" className="flex items-center gap-2 bg-transparent">

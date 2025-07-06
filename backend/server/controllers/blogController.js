@@ -141,3 +141,22 @@ exports.getBlogBySlug = async (req, res) => {
     });
   }
 };
+
+exports.getPublishedBlogs = async (req, res) => {
+  try {
+    const publishedBlogs = await Blog.find({ isPublished: true });
+
+    res.status(200).json({
+      success: true,
+      count: publishedBlogs.length,
+      data: publishedBlogs
+    });
+  } catch (err) {
+    console.error('Error fetching published blogs:', err);
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred while fetching published blogs.',
+      error: err.message
+    });
+  }
+};

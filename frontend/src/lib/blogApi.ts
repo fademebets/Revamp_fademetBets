@@ -1,7 +1,7 @@
 import { getCookie } from "cookies-next"
 import type { Blog, BlogsResponse, CreateBlogData, UpdateBlogData } from "@/types/blog"
 
-const API_BASE_URL = "https://revamp-fademetbets.onrender.com/api"
+const API_BASE_URL = "http://localhost:5000/api"
 
 const getAuthToken = () => {
   return getCookie("auth-token")
@@ -9,6 +9,7 @@ const getAuthToken = () => {
 
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const token = getAuthToken()
+
   const config: RequestInit = {
     ...options,
     headers: {
@@ -43,7 +44,7 @@ const transformBlog = (blog: any): Blog => ({
   slug: blog.slug,
   createdAt: blog.createdAt,
   updatedAt: blog.updatedAt,
-  author: blog.author,
+  author: blog.author || 'FADEMEBETS',
 })
 
 // API functions
@@ -54,6 +55,7 @@ export const blogApi = {
     // Handle your API response structure: { success: true, count: number, data: Blog[] }
     if (response.success && response.data && Array.isArray(response.data)) {
       const transformedBlogs = response.data.map(transformBlog)
+
       return {
         blogs: transformedBlogs,
         total: response.count || response.data.length,
@@ -90,30 +92,6 @@ export const blogApi = {
     throw new Error("Unexpected API response structure")
   },
 
-  getBlogById: async (id: string): Promise<Blog> => {
-    const response = await apiRequest(`/blogs/${id}`)
-
-    // Handle response structure
-    if (response.success && response.data) {
-      return transformBlog(response.data)
-    }
-
-    // Fallback for direct blog object
-    return transformBlog(response)
-  },
-
-  getBlogBySlug: async (slug: string): Promise<Blog> => {
-    const response = await apiRequest(`/blogs/slug/${slug}`)
-
-    // Handle response structure
-    if (response.success && response.data) {
-      return transformBlog(response.data)
-    }
-
-    // Fallback for direct blog object
-    return transformBlog(response)
-  },
-
   createBlog: async (data: CreateBlogData): Promise<Blog> => {
     const response = await apiRequest("/blogs", {
       method: "POST",
@@ -124,6 +102,7 @@ export const blogApi = {
     if (response.success && response.data) {
       return transformBlog(response.data)
     }
+
     return transformBlog(response)
   },
 
@@ -137,6 +116,7 @@ export const blogApi = {
     if (response.success && response.data) {
       return transformBlog(response.data)
     }
+
     return transformBlog(response)
   },
 
@@ -145,4 +125,34 @@ export const blogApi = {
       method: "DELETE",
     })
   },
+
+  getPublishedBlogs: async (page = 1, limit = 10): Promise<BlogsResponse> => {
+  const response = await apiRequest(`/blogs/published?page=${page}&limit=${limit}`)
+
+  if (response.success && response.data && Array.isArray(response.data)) {
+    const transformedBlogs = response.data.map(transformBlog)
+    return {
+      blogs: transformedBlogs,
+      total: response.count || response.data.length,
+      page,
+      limit,
+      totalPages: Math.ceil((response.count || response.data.length) / limit),
+    }
+  }
+
+  throw new Error("Unexpected response while fetching published blogs")
+},
+
+getBlogBySlug: async (slug: string): Promise<Blog> => {
+    const response = await apiRequest(`/blogs/slug/${slug}`)
+
+    // Handle response structure
+    if (response.success && response.data) {
+      return transformBlog(response.data)
+    }
+
+    // Fallback for direct blog object
+    return transformBlog(response)
+  },
+
 }

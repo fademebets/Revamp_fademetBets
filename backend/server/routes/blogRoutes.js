@@ -6,6 +6,7 @@ const adminAuth = require('../middlewares/adminAuth');
 // Public: Get all blogs
 router.get('/', blogController.getAllBlogs);
 router.get('/slug/:slug', blogController.getBlogBySlug);
+router.get('/published', blogController.getPublishedBlogs);
 
 // Admin protected: Create, Update, Delete
 router.post('/', adminAuth, blogController.createBlog);
