@@ -177,7 +177,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                   <Label htmlFor="password" className="text-base text-gray-800">
                     Password
                   </Label>
-                  <a href="#" className="ml-auto text-sm text-red-600 hover:underline">
+                  <a href="/forget-password" className="ml-auto text-sm text-red-600 hover:underline">
                     Forgot password?
                   </a>
                 </div>
@@ -227,7 +227,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 
             <div className="mt-6 text-center text-sm text-gray-600">
               Don&apos;t have an account?{" "}
-              <a href="#" className="text-red-600 hover:underline font-medium">
+              <a href="/" className="text-red-600 hover:underline font-medium">
                 Sign up
               </a>
             </div>

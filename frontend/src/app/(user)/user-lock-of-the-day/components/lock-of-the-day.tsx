@@ -1,17 +1,63 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { getCookie } from "cookies-next"
 import { lockApi } from "@/lib/lockofthedayApi"
 import { TrendingUp, Target, DollarSign, BarChart3, Calendar, Trophy } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { toast } from "sonner"
 
 export default function LockOfTheDay() {
   const [lock, setLock] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
+  const [subscriptionActive, setSubscriptionActive] = useState(false)
+  const [checkingSubscription, setCheckingSubscription] = useState(true)
 
   useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        const token = getCookie("auth-token")
+
+        if (!token) {
+          toast.error("Authentication required")
+          setCheckingSubscription(false)
+          return
+        }
+
+        const response = await fetch("http://localhost:5000/api/auth/subscription-status", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to check subscription status")
+        }
+
+        const data = await response.json()
+
+        if (data.subscriptionStatus === "active") {
+          setSubscriptionActive(true)
+          // Fetch lock only if subscription is active
+          fetchLock()
+        } else {
+          toast.error("Your subscription is inactive or expired")
+          setSubscriptionActive(false)
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error("Subscription check failed:", error)
+        toast.error("Failed to verify subscription status")
+        setSubscriptionActive(false)
+        setLoading(false)
+      } finally {
+        setCheckingSubscription(false)
+      }
+    }
+
     const fetchLock = async () => {
       try {
         const { data } = await lockApi.getActiveLock()
@@ -24,7 +70,7 @@ export default function LockOfTheDay() {
       }
     }
 
-    fetchLock()
+    checkSubscription()
   }, [])
 
   const getConfidenceColor = (confidence: string) => {
@@ -39,6 +85,26 @@ export default function LockOfTheDay() {
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
+  }
+
+  if (checkingSubscription) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-700 text-lg font-semibold">
+        Checking subscription status...
+      </div>
+    )
+  }
+
+  if (!subscriptionActive) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-center py-16">
+        <Trophy className="h-16 w-16 text-red-600 mb-4" />
+        <h2 className="text-3xl font-bold text-red-800 mb-2">Subscription Required</h2>
+        <p className="text-red-700 text-lg mb-4 max-w-md">
+          You need an active subscription to access Lock of the Day. Please upgrade your plan to continue.
+        </p>
+      </div>
+    )
   }
 
   if (loading) {
@@ -96,7 +162,6 @@ export default function LockOfTheDay() {
               </div>
             </div>
           </CardHeader>
-
           <CardContent className="p-8">
             {/* Game Information */}
             <div className="mb-8">
@@ -118,7 +183,6 @@ export default function LockOfTheDay() {
                 <h4 className="font-semibold text-slate-700 mb-1">The Pick</h4>
                 <p className="text-lg font-bold text-red-700">{lock.pick}</p>
               </div>
-
               <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
                 <div className="flex items-center justify-center mb-2">
                   <DollarSign className="h-6 w-6 text-red-600" />
@@ -126,7 +190,6 @@ export default function LockOfTheDay() {
                 <h4 className="font-semibold text-slate-700 mb-1">Odds</h4>
                 <p className="text-lg font-bold text-red-700">{lock.odds}</p>
               </div>
-
               <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
                 <div className="flex items-center justify-center mb-2">
                   <BarChart3 className="h-6 w-6 text-red-600" />
@@ -152,7 +215,8 @@ export default function LockOfTheDay() {
             {/* Disclaimer */}
             <div className="mt-8 p-4 bg-red-100 rounded-lg border border-red-200">
               <p className="text-sm text-red-800 text-center">
-                <strong>Disclaimer:</strong> Gambling involves risk. Please bet responsibly and within your means. This is for entertainment purposes only.
+                <strong>Disclaimer:</strong> Gambling involves risk. Please bet responsibly and within your means. This
+                is for entertainment purposes only.
               </p>
             </div>
           </CardContent>

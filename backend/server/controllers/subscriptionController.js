@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Stripe = require('stripe');
 const PRICES = require('../config/prices');
 const jwt = require('jsonwebtoken');
+const { resend } = require('../config/resend'); // assuming you have this setup
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -37,7 +38,7 @@ exports.createCheckoutSession = async (req, res) => {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `https://revamp-fademetbets.vercel.app/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: 'https://www.fademebets.com/subscribe.html',
+      cancel_url: 'https://revamp-fademetbets.vercel.app',
     });
 
     res.json({ sessionId: session.id });
@@ -73,24 +74,21 @@ exports.confirmSubscription = async (req, res) => {
       return res.status(400).json({ message: 'Invalid subscription ID.' });
     }
 
-    // ✅ Now safely fetch the latest invoice to get period end
     const invoice = await stripe.invoices.retrieve(subscription.latest_invoice);
     if (!invoice) {
       return res.status(400).json({ message: 'Invoice not found for this subscription.' });
     }
 
-    const periodEnd = invoice.lines.data[0].period.end; // get the first item's period end
+    const periodEnd = invoice.lines.data[0].period.end;
     if (!periodEnd) {
       return res.status(500).json({ message: 'Could not retrieve subscription period end.' });
     }
 
-    // Find user
     const user = await User.findOne({ stripeCustomerId: customerId });
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    // Update user subscription info
     user.subscriptionStatus = subscription.status;
     user.subscriptionEndDate = new Date(periodEnd * 1000);
     await user.save();
@@ -107,6 +105,47 @@ exports.confirmSubscription = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
+
+    // ✅ Send subscription confirmation email via Resend
+    await resend.emails.send({
+      from: 'FadeMeBets <no-reply@fademebets.com>',
+      to: user.email,
+      subject: 'Subscription Activated Successfully!',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px;">
+  <div style="text-align: center; margin-bottom: 20px;">
+    <img src="https://www.fademebets.com/logo.png" alt="FadeMeBets" style="max-width: 160px;" />
+  </div>
+
+  <h2 style="color: #222;">Hi ${user.name || 'there'},</h2>
+
+  <p style="font-size: 16px; line-height: 1.6; margin-top: 10px;">
+    Your subscription has been <strong style="color: #4CAF50;">successfully activated 🎉</strong>
+  </p>
+
+  <p style="font-size: 16px; line-height: 1.6;">
+    <strong>Plan:</strong> ${subscription.items.data[0].price.nickname}
+  </p>
+
+  <p style="font-size: 16px; line-height: 1.6;">
+    <strong>Subscription valid until:</strong> ${new Date(periodEnd * 1000).toLocaleDateString()}
+  </p>
+
+  <br/>
+
+  <p style="font-size: 16px; line-height: 1.6;">
+    Thank you for choosing <strong>FadeMeBets 🚀</strong>
+  </p>
+
+  <div style="margin-top: 30px; text-align: center;">
+    <a href="https://www.fademebets.com/userProfile" style="background-color: #4CAF50; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-size: 16px;">
+      Visit Dashboard
+    </a>
+  </div>
+</div>
+
+      `
+    });
 
     res.json({
       message: 'Subscription activated successfully.',

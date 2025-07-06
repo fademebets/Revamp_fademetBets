@@ -8,6 +8,7 @@ const handleStripeWebhook = require('./utils/stripeWebhookHandler');
 
 // Import routes
 const scrapeRoutes = require('./routes/scrapeRoutes');
+const passwordForget = require('./routes/authForgetRoutes')
 const adminRoutes = require('./routes/adminAuthRoutes');
 const evRoutes = require('./routes/evRoutes');
 const lockRoutes = require('./routes/lockRoutes');
@@ -58,6 +59,7 @@ app.use('/api', loginRoutes);
 app.use('/api', adminUserRoutes);
 app.use('/api', salesRoutes);
 app.use("/api/odds", oddsRoutes);
+app.use("/api", passwordForget);
 
 // Server start
 const PORT = process.env.PORT || 5000;

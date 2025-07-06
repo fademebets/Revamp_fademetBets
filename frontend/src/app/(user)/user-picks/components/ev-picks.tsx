@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { getCookie } from "cookies-next"
 import { getActiveEvPicks } from "@/lib/ev-picks"
 import { TrendingUp, Target, DollarSign, BarChart3, Calendar, Zap, Star } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,8 +12,52 @@ import { toast } from "sonner"
 export default function EVPicks() {
   const [evPicks, setEvPicks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [subscriptionActive, setSubscriptionActive] = useState(false)
+  const [checkingSubscription, setCheckingSubscription] = useState(true)
 
   useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        const token = getCookie("auth-token")
+
+        if (!token) {
+          toast.error("Authentication required")
+          setCheckingSubscription(false)
+          return
+        }
+
+        const response = await fetch("http://localhost:5000/api/auth/subscription-status", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to check subscription status")
+        }
+
+        const data = await response.json()
+
+        if (data.subscriptionStatus === "active") {
+          setSubscriptionActive(true)
+          // Fetch picks only if subscription is active
+          fetchPicks()
+        } else {
+          toast.error("Your subscription is inactive or expired")
+          setSubscriptionActive(false)
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error("Subscription check failed:", error)
+        toast.error("Failed to verify subscription status")
+        setSubscriptionActive(false)
+        setLoading(false)
+      } finally {
+        setCheckingSubscription(false)
+      }
+    }
+
     const fetchPicks = async () => {
       const { evs, message } = await getActiveEvPicks()
       if (evs.length === 0) {
@@ -22,7 +67,7 @@ export default function EVPicks() {
       setLoading(false)
     }
 
-    fetchPicks()
+    checkSubscription()
   }, [])
 
   const getConfidenceColor = (confidence: string | number | undefined) => {
@@ -41,6 +86,26 @@ export default function EVPicks() {
 
   const getOddsColor = (odds: number) => {
     return odds >= 0 ? "text-red-600" : "text-red-700"
+  }
+
+  if (checkingSubscription) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-700 text-lg font-semibold">
+        Checking subscription status...
+      </div>
+    )
+  }
+
+  if (!subscriptionActive) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-center py-16">
+        <Zap className="h-16 w-16 text-red-600 mb-4" />
+        <h2 className="text-3xl font-bold text-red-800 mb-2">Subscription Required</h2>
+        <p className="text-red-700 text-lg mb-4 max-w-md">
+          You need an active subscription to access EV Picks. Please upgrade your plan to continue.
+        </p>
+      </div>
+    )
   }
 
   if (loading) {
@@ -79,13 +144,17 @@ export default function EVPicks() {
             <Zap className="h-10 w-10 text-red-600 mb-4 animate-pulse" />
             <h2 className="text-2xl font-bold text-red-800 mb-2">No EV Picks Available</h2>
             <p className="text-red-700 text-sm mb-4 max-w-sm">
-              There are no active EV picks available at the moment. Check back later — new opportunities are updated throughout the day.
+              There are no active EV picks available at the moment. Check back later — new opportunities are updated
+              throughout the day.
             </p>
           </div>
         ) : (
           <div className="grid lg:grid-cols-2 md:grid-cols-2 gap-6">
             {evPicks.map((pick, index) => (
-              <Card key={pick._id || index} className="shadow-xl border-0 bg-white hover:shadow-2xl transition-shadow duration-300">
+              <Card
+                key={pick._id || index}
+                className="shadow-xl border-0 bg-white hover:shadow-2xl transition-shadow duration-300"
+              >
                 <CardHeader className="bg-gradient-to-r py-5 from-red-600 to-red-700 text-white rounded-t-lg">
                   <div className="flex items-center justify-between">
                     <div>
@@ -100,7 +169,6 @@ export default function EVPicks() {
                     </Badge>
                   </div>
                 </CardHeader>
-
                 <CardContent className="p-6">
                   <div className="mb-6">
                     <h3 className="text-sm font-semibold text-red-800 mb-2 flex items-center gap-1">
@@ -111,29 +179,24 @@ export default function EVPicks() {
                       <p className="text-lg font-bold text-red-900 text-center leading-tight">{pick.title}</p>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-3 gap-3 mb-6">
                     <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
                       <TrendingUp className="h-4 w-4 text-red-600 mx-auto mb-1" />
                       <h4 className="text-xs font-semibold text-red-700 mb-1">EV %</h4>
                       <p className="text-sm font-bold text-red-800 leading-tight">{pick.evValue}%</p>
                     </div>
-
                     <div className="text-center p-3 bg-white rounded-lg border border-red-200">
                       <DollarSign className="h-4 w-4 text-red-600 mx-auto mb-1" />
                       <h4 className="text-xs font-semibold text-red-700 mb-1">Odds</h4>
                       <p className={`text-sm font-bold ${getOddsColor(pick.odds)}`}>{pick.odds}</p>
                     </div>
-
                     <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
                       <BarChart3 className="h-4 w-4 text-red-600 mx-auto mb-1" />
                       <h4 className="text-xs font-semibold text-red-700 mb-1">Cover %</h4>
                       <p className="text-sm font-bold text-red-800">{pick.coverPercentage}%</p>
                     </div>
                   </div>
-
                   <Separator className="my-4 bg-red-200" />
-
                   <div>
                     <h3 className="text-sm font-semibold text-red-800 mb-3 flex items-center gap-1">
                       <BarChart3 className="h-4 w-4" />
@@ -166,7 +229,7 @@ export default function EVPicks() {
                 <p className="text-2xl font-bold text-red-800">
                   {
                     evPicks.filter((pick) => {
-                      const numericConfidence = parseFloat(String(pick.confidence).replace("%", "")) || 0
+                      const numericConfidence = Number.parseFloat(String(pick.confidence).replace("%", "")) || 0
                       return numericConfidence >= 80
                     }).length
                   }
@@ -175,10 +238,7 @@ export default function EVPicks() {
               <div className="text-center p-4 bg-red-50 rounded-lg">
                 <h3 className="text-sm font-semibold text-red-700 mb-1">Average EV%</h3>
                 <p className="text-2xl font-bold text-red-800">
-                  {(
-                    evPicks.reduce((sum, pick) => sum + (pick.evValue || 0), 0) / evPicks.length
-                  ).toFixed(1)}
-                  %
+                  {(evPicks.reduce((sum, pick) => sum + (pick.evValue || 0), 0) / evPicks.length).toFixed(1)}%
                 </p>
               </div>
               <div className="text-center p-4 bg-red-50 rounded-lg">

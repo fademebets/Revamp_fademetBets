@@ -24,52 +24,6 @@ exports.register = async (req, res) => {
 
 
 
-// Forgot Password - Send Code
-exports.forgotPassword = async (req, res) => {
-  const { email } = req.body;
-  try {
-    const admin = await Admin.findOne({ email });
-    if (!admin) return res.status(400).json({ message: 'Admin not found' });
-
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    admin.resetCode = code;
-    admin.resetCodeExpiry = Date.now() + 10 * 60 * 1000; // 10 mins
-    await admin.save();
-
-    await transporter.sendMail({
-      to: email,
-      subject: 'FadeMeBets Admin Password Reset Code',
-      text: `Your password reset code is ${code}. It expires in 10 minutes.`
-    });
-
-    res.json({ message: 'Reset code sent to email' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Verify Code and Reset Password
-exports.resetPassword = async (req, res) => {
-  const { email, code, newPassword } = req.body;
-  try {
-    const admin = await Admin.findOne({ email });
-    if (!admin) return res.status(400).json({ message: 'Admin not found' });
-
-    if (admin.resetCode !== code || Date.now() > admin.resetCodeExpiry)
-      return res.status(400).json({ message: 'Invalid or expired code' });
-
-    admin.password = await bcrypt.hash(newPassword, 12);
-    admin.resetCode = undefined;
-    admin.resetCodeExpiry = undefined;
-    await admin.save();
-
-    res.json({ message: 'Password reset successful' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-
 exports.notifyLockUpdate = async (req, res) => {
   try {
     console.log('Fetching active subscribers...');

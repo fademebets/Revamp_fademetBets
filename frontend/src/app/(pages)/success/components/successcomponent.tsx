@@ -129,11 +129,11 @@ export default function SubscriptionSuccess() {
   }
 
   const handleGoToDashboard = () => {
-    window.location.href = "/dashboard"
+    window.location.href = "/userProfile"
   }
 
   const handleSubscribeAgain = () => {
-    window.location.href = "/subscription"
+    window.location.href = "/"
   }
 
   if (isLoading) {
