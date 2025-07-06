@@ -1,15 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
+import { deleteCookie } from "cookies-next"
+import { toast } from "sonner"
 
 interface HeaderProps {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
   setMobileOpen: (open: boolean) => void
   pageTitle?: string
-  setIsLoggingOut: (value: boolean) => void
+    setIsLoggingOut: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 export function Header({
@@ -17,35 +19,34 @@ export function Header({
   setSidebarOpen,
   setMobileOpen,
   pageTitle = "User Profile",
+  setIsLoggingOut,
 }: HeaderProps) {
-  const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
+ const router = useRouter()
 
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true)
 
+      // Show logout toast
+      toast.success("Logging out...")
 
-    setMounted(true)
-  }, [])
+      // Clear all auth cookies
+      deleteCookie("auth-token")
+      deleteCookie("user-role")
+      deleteCookie("subscription-status")
 
-  // const handleLogout = async () => {
-  //   try {
-  //     setIsLoggingOut(true)
-
-
-
-  //     setTimeout(() => {
-  //       setIsLoggingOut(false)
-  //       router.replace("/login")
-  //     }, 2000)
-  //   } catch (e) {
-  //     setIsLoggingOut(false)
-  //     console.error("Logout failed", e)
-  //     // Show an error toast or handle logout failure logic here
-  //   }
-  // }
-
-  if (!mounted) {
-    return null
+      // Wait for 2 seconds to show loading animation
+      setTimeout(() => {
+        setIsLoggingOut(false)
+        router.replace("/login")
+        toast.success("Successfully logged out!")
+      }, 2000)
+    } catch (e) {
+      setIsLoggingOut(false)
+      console.error("Logout failed", e)
+      toast.error("Logout failed. Please try again.")
+    }
   }
 
 
@@ -81,7 +82,7 @@ export function Header({
 
   <Button
     className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
-    onClick={() => console.log("Logout clicked")}
+    onClick={handleLogout}
   >
     Logout
   </Button>

@@ -1,15 +1,10 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -18,217 +13,76 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Target, Calendar, Plus, MoreHorizontal, Edit, Trash2, User, Filter } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { useState } from "react"
+import { useCreateLock, useUpdateLock, useDeleteLock } from "@/hooks/useLocks"
+import type { Lock, CreateLockRequest, UpdateLockRequest } from "@/types/lock"
+import { toast } from "sonner"
 
-const sportsOptions = [
-  { value: "nba", label: "NBA" },
-  { value: "nfl", label: "NFL" },
-  { value: "mlb", label: "MLB" },
-  { value: "nhl", label: "NHL" },
-  { value: "soccer", label: "Soccer" },
-  { value: "tennis", label: "Tennis" },
-  { value: "custom", label: "Custom Sport" },
-]
-
-interface Lock {
-  id: string
+// Form data interface
+interface LockFormData {
   sport: string
+  customSport: string
   game: string
   pick: string
   odds: string
-  confidence: number
-  units: number
+  confidence: string
+  units: string
   analysis: string
-  status: "Active" | "Expired" | "Pending"
-  createdDate: string
-  endingDate: string
+  status: string
 }
 
-const mockLocks: Lock[] = [
-  {
-    id: "1",
-    sport: "NBA",
-    game: "Boston Celtics vs Indiana Pacers",
-    pick: "Jayson Tatum Over 24.5 Points",
-    odds: "-110",
-    confidence: 85,
-    units: 2.5,
-    analysis: "Tatum has been averaging 28.2 points in his last 5 games...",
-    status: "Active",
-    createdDate: "25 June 2025",
-    endingDate: "30 July 2025",
-  },
-  {
-    id: "2",
-    sport: "NFL",
-    game: "Kansas City Chiefs vs Buffalo Bills",
-    pick: "Patrick Mahomes Over 2.5 TD Passes",
-    odds: "+120",
-    confidence: 78,
-    units: 1.5,
-    analysis: "Mahomes has thrown 3+ TDs in 4 of his last 6 games...",
-    status: "Active",
-    createdDate: "20 June 2025",
-    endingDate: "12 August 2025",
-  },
-  {
-    id: "3",
-    sport: "MLB",
-    game: "New York Yankees vs Boston Red Sox",
-    pick: "Aaron Judge Over 1.5 Total Bases",
-    odds: "-130",
-    confidence: 72,
-    units: 1.0,
-    analysis: "Judge has excellent numbers against Red Sox pitching...",
-    status: "Expired",
-    createdDate: "15 June 2025",
-    endingDate: "05 September 2025",
-  },
+// Sports options
+const sportsOptions = [
+  { value: "nfl", label: "NFL" },
+  { value: "nba", label: "NBA" },
+  { value: "mlb", label: "MLB" },
+  { value: "nhl", label: "NHL" },
+  { value: "mma", label: "MMA" },
+  { value: "esports", label: "Esports" },
+  { value: "custom", label: "Custom" },
 ]
 
-export function LockAdmin() {
-  const [locks, setLocks] = useState<Lock[]>(mockLocks)
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editingLock, setEditingLock] = useState<Lock | null>(null)
-  const [formData, setFormData] = useState({
-    sport: "",
-    customSport: "",
-    game: "",
-    pick: "",
-    odds: "",
-    confidence: "",
-    units: "",
-    analysis: "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
+// Status options matching backend enum
+const statusOptions = [
+  { value: "draft", label: "Draft" },
+  { value: "active", label: "Active" },
+  { value: "expired", label: "Expired" },
+]
 
-  const resetForm = () => {
-    setFormData({
-      sport: "",
-      customSport: "",
-      game: "",
-      pick: "",
-      odds: "",
-      confidence: "",
-      units: "",
-      analysis: "",
-    })
+// Utility function to safely display numbers
+const safeDisplayNumber = (value: any): string => {
+  if (value === null || value === undefined || isNaN(Number(value))) {
+    return "0"
   }
+  return String(value)
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const newLock: Lock = {
-      id: Date.now().toString(),
-      sport: formData.sport === "custom" ? formData.customSport : formData.sport,
-      game: formData.game,
-      pick: formData.pick,
-      odds: formData.odds,
-      confidence: Number.parseInt(formData.confidence),
-      units: Number.parseFloat(formData.units),
-      analysis: formData.analysis,
-      status: "Active",
-      createdDate: new Date().toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }),
-      endingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      }),
-    }
-
-    setLocks((prev) => [newLock, ...prev])
-    setIsSubmitting(false)
-    setIsCreateDialogOpen(false)
-    resetForm()
-  }
-
-  const handleEdit = (lock: Lock) => {
-    setEditingLock(lock)
-    setFormData({
-      sport: lock.sport.toLowerCase(),
-      customSport: "",
-      game: lock.game,
-      pick: lock.pick,
-      odds: lock.odds,
-      confidence: lock.confidence.toString(),
-      units: lock.units.toString(),
-      analysis: lock.analysis,
-    })
-    setIsEditDialogOpen(true)
-  }
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!editingLock) return
-
-    setIsSubmitting(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const updatedLock: Lock = {
-      ...editingLock,
-      sport: formData.sport === "custom" ? formData.customSport : formData.sport,
-      game: formData.game,
-      pick: formData.pick,
-      odds: formData.odds,
-      confidence: Number.parseInt(formData.confidence),
-      units: Number.parseFloat(formData.units),
-      analysis: formData.analysis,
-    }
-
-    setLocks((prev) => prev.map((lock) => (lock.id === editingLock.id ? updatedLock : lock)))
-    setIsSubmitting(false)
-    setIsEditDialogOpen(false)
-    setEditingLock(null)
-    resetForm()
-  }
-
-  const handleDelete = (lockId: string) => {
-    setLocks((prev) => prev.filter((lock) => lock.id !== lockId))
-  }
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Active":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
-      case "Expired":
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Expired</Badge>
-      case "Pending":
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
-  }
-
-  const getInitials = (text: string) => {
-    return text
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
-  const LockForm = ({ onSubmit, isEdit = false }: { onSubmit: (e: React.FormEvent) => void; isEdit?: boolean }) => (
+// Lock form component
+const LockForm = ({
+  formData,
+  onInputChange,
+  onSubmit,
+  isEdit = false,
+  isSubmitting,
+}: {
+  formData: LockFormData
+  onInputChange: (field: keyof LockFormData, value: string) => void
+  onSubmit: (e: React.FormEvent) => void
+  isEdit?: boolean
+  isSubmitting: boolean
+}) => {
+  return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="sport" className="text-sm font-medium">
           Sport *
         </Label>
-        <Select value={formData.sport} onValueChange={(value) => handleInputChange("sport", value)}>
+        <Select value={formData.sport} onValueChange={(value) => onInputChange("sport", value)}>
           <SelectTrigger>
             <SelectValue placeholder="Select a sport" />
           </SelectTrigger>
@@ -250,7 +104,7 @@ export function LockAdmin() {
           <Input
             id="customSport"
             value={formData.customSport}
-            onChange={(e) => handleInputChange("customSport", e.target.value)}
+            onChange={(e) => onInputChange("customSport", e.target.value)}
             placeholder="Enter custom sport name"
           />
         </div>
@@ -264,7 +118,7 @@ export function LockAdmin() {
           <Input
             id="game"
             value={formData.game}
-            onChange={(e) => handleInputChange("game", e.target.value)}
+            onChange={(e) => onInputChange("game", e.target.value)}
             placeholder="e.g., Boston Celtics vs Indiana Pacers"
           />
         </div>
@@ -275,13 +129,13 @@ export function LockAdmin() {
           <Input
             id="pick"
             value={formData.pick}
-            onChange={(e) => handleInputChange("pick", e.target.value)}
+            onChange={(e) => onInputChange("pick", e.target.value)}
             placeholder="e.g., Jayson Tatum Over 24.5 Points"
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div className="space-y-2">
           <Label htmlFor="odds" className="text-sm font-medium">
             Odds *
@@ -289,7 +143,7 @@ export function LockAdmin() {
           <Input
             id="odds"
             value={formData.odds}
-            onChange={(e) => handleInputChange("odds", e.target.value)}
+            onChange={(e) => onInputChange("odds", e.target.value)}
             placeholder="e.g., -110"
           />
         </div>
@@ -301,7 +155,7 @@ export function LockAdmin() {
             <Input
               id="confidence"
               value={formData.confidence}
-              onChange={(e) => handleInputChange("confidence", e.target.value)}
+              onChange={(e) => onInputChange("confidence", e.target.value)}
               placeholder="85"
               type="number"
               min="0"
@@ -321,9 +175,26 @@ export function LockAdmin() {
             min="0"
             step="0.1"
             value={formData.units}
-            onChange={(e) => handleInputChange("units", e.target.value)}
+            onChange={(e) => onInputChange("units", e.target.value)}
             placeholder="1.5"
           />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="status" className="text-sm font-medium">
+            Status *
+          </Label>
+          <Select value={formData.status} onValueChange={(value) => onInputChange("status", value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((status) => (
+                <SelectItem key={status.value} value={status.value}>
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -334,7 +205,7 @@ export function LockAdmin() {
         <Textarea
           id="analysis"
           value={formData.analysis}
-          onChange={(e) => handleInputChange("analysis", e.target.value)}
+          onChange={(e) => onInputChange("analysis", e.target.value)}
           placeholder="Provide detailed analysis for this pick..."
           rows={4}
           className="resize-none"
@@ -355,120 +226,291 @@ export function LockAdmin() {
       </Button>
     </form>
   )
+}
+
+interface LockAdminProps {
+  locks: Lock[]
+  currentPage: number
+  totalPages: number
+  totalLocks: number
+  onPageChange: (page: number) => void
+  isLoading: boolean
+}
+
+export function LockAdmin({ locks, currentPage, totalPages, totalLocks, onPageChange, isLoading }: LockAdminProps) {
+  // Hooks
+  const createLockMutation = useCreateLock()
+  const updateLockMutation = useUpdateLock()
+  const deleteLockMutation = useDeleteLock()
+
+  // State
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [lockToDelete, setLockToDelete] = useState<Lock | null>(null)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingLock, setEditingLock] = useState<Lock | null>(null)
+
+  const [formData, setFormData] = useState<LockFormData>({
+    sport: "",
+    customSport: "",
+    game: "",
+    pick: "",
+    odds: "",
+    confidence: "",
+    units: "",
+    analysis: "",
+    status: "draft",
+  })
+
+  // Form handlers
+  const handleInputChange = (field: keyof LockFormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const resetForm = () => {
+    setFormData({
+      sport: "",
+      customSport: "",
+      game: "",
+      pick: "",
+      odds: "",
+      confidence: "",
+      units: "",
+      analysis: "",
+      status: "draft",
+    })
+  }
+
+  const validateForm = (data: LockFormData): boolean => {
+    const sport = data.sport === "custom" ? data.customSport : data.sport
+    return !!(
+      sport &&
+      data.game &&
+      data.pick &&
+      data.odds &&
+      data.confidence &&
+      data.units &&
+      data.analysis &&
+      data.status
+    )
+  }
+
+  // CRUD operations
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!validateForm(formData)) {
+      toast.error("Please fill in all required fields")
+      return
+    }
+
+    const lockData: CreateLockRequest = {
+      sport: formData.sport === "custom" ? formData.customSport : formData.sport,
+      game: formData.game,
+      pick: formData.pick,
+      odds: Number.parseFloat(formData.odds) || 0,
+      confidence: Number.parseInt(formData.confidence) || 0,
+      units: Number.parseFloat(formData.units) || 1,
+      analysis: formData.analysis,
+      status: formData.status as "draft" | "active" | "expired",
+      date: new Date().toISOString(),
+    }
+
+    try {
+      await createLockMutation.mutateAsync(lockData)
+      setIsCreateDialogOpen(false)
+      resetForm()
+      toast.success("Lock created successfully!")
+    } catch (error) {
+      console.error("Error creating lock:", error)
+      toast.error("Failed to create lock. Please try again.")
+    }
+  }
+
+  const handleEdit = (lock: Lock) => {
+    setEditingLock(lock)
+    setFormData({
+      sport: lock.sport.toLowerCase(),
+      customSport: "",
+      game: lock.game,
+      pick: lock.pick,
+      odds: safeDisplayNumber(lock.odds),
+      confidence: safeDisplayNumber(lock.confidence),
+      units: safeDisplayNumber(lock.units),
+      analysis: lock.analysis,
+      status: lock.status,
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingLock) return
+
+    if (!validateForm(formData)) {
+      toast.error("Please fill in all required fields")
+      return
+    }
+
+    const lockData: UpdateLockRequest = {
+      sport: formData.sport === "custom" ? formData.customSport : formData.sport,
+      game: formData.game,
+      pick: formData.pick,
+      odds: Number.parseFloat(formData.odds) || 0,
+      confidence: Number.parseInt(formData.confidence) || 0,
+      units: Number.parseFloat(formData.units) || 1,
+      analysis: formData.analysis,
+      status: formData.status as "draft" | "active" | "expired",
+      date: new Date().toISOString(),
+    }
+
+    try {
+      await updateLockMutation.mutateAsync({ lockId: editingLock.id, lockData })
+      setIsEditDialogOpen(false)
+      setEditingLock(null)
+      resetForm()
+      toast.success("Lock updated successfully!")
+    } catch (error) {
+      console.error("Error updating lock:", error)
+      toast.error("Failed to update lock. Please try again.")
+    }
+  }
+
+  const handleDelete = (lock: Lock) => {
+    setLockToDelete(lock)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!lockToDelete) return
+
+    try {
+      await deleteLockMutation.mutateAsync(lockToDelete.id)
+      setDeleteDialogOpen(false)
+      setLockToDelete(null)
+      toast.success("Lock deleted successfully!")
+    } catch (error) {
+      console.error("Error deleting lock:", error)
+      toast.error("Failed to delete lock. Please try again.")
+    }
+  }
+
+  const getStatusBadge = (status: string, lock: Lock) => {
+    const statusColors = {
+      draft: "bg-gray-100 text-gray-800 hover:bg-gray-100",
+      active: "bg-green-100 text-green-800 hover:bg-green-100",
+      expired: "bg-red-100 text-red-800 hover:bg-red-100",
+    }
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Badge
+            className={`cursor-pointer ${statusColors[status as keyof typeof statusColors] || "bg-gray-100 text-gray-800"}`}
+          >
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </Badge>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={() => handleStatusChange(lock, "draft")}>Draft</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleStatusChange(lock, "active")}>Active</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleStatusChange(lock, "expired")}>Expired</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+  }
+
+  const handleStatusChange = async (lock: Lock, newStatus: "draft" | "active" | "expired") => {
+    try {
+      await updateLockMutation.mutateAsync({
+        lockId: lock.id,
+        lockData: {
+          sport: lock.sport,
+          game: lock.game,
+          pick: lock.pick,
+          odds: lock.odds,
+          confidence: lock.confidence,
+          units: lock.units,
+          analysis: lock.analysis,
+          status: newStatus,
+          date: lock.createdDate,
+        },
+      })
+      toast.success("Lock status updated successfully!")
+    } catch (error) {
+      console.error("Error updating lock status:", error)
+      toast.error("Failed to update lock status. Please try again.")
+    }
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-red-500 to-red-900 rounded-lg">
-              <Target className="h-6 w-6 text-white" />
-            </div>
-            Lock Management
-          </h1>
-          <p className="text-gray-600 mt-2">Manage your premium sports betting picks and analysis</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Badge variant="outline" className="flex items-center gap-2 text-sm text-gray-700">
-            <Calendar className="h-4 w-4 text-emerald-600" />
-            {new Date().toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })}
-          </Badge>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Locks Management</h1>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>Create Lock</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Create Lock</DialogTitle>
+              <DialogDescription>Make a new lock to track.</DialogDescription>
+            </DialogHeader>
+            <LockForm
+              formData={formData}
+              onInputChange={handleInputChange}
+              onSubmit={handleSubmit}
+              isSubmitting={createLockMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-2">
-          <User className="h-5 w-5 text-gray-500" />
-          <span className="text-sm text-gray-600">Locks</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Calendar
-          </Button>
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filter
-          </Button>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-[#1c1c1c] hover:bg-[#2c2c2c] text-white flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Create Lock
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Create New Lock
-                </DialogTitle>
-                <DialogDescription>Add a new Lock of the Day with detailed analysis and projections</DialogDescription>
-              </DialogHeader>
-              <LockForm onSubmit={handleSubmit} />
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Locks Table */}
-      <Card className="bg-white shadow-sm border border-gray-200">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b border-gray-200">
-                <TableHead className="font-semibold text-gray-700 py-4">LOCK DETAILS</TableHead>
-                <TableHead className="font-semibold text-gray-700">SPORT</TableHead>
-                <TableHead className="font-semibold text-gray-700">CONFIDENCE</TableHead>
-                <TableHead className="font-semibold text-gray-700">ENDING DATE</TableHead>
-                <TableHead className="font-semibold text-gray-700">STATUS</TableHead>
-                <TableHead className="w-12"></TableHead>
+      <div className="rounded-md">
+        <Table>
+          <TableHeader className="bg-gray-50">
+            <TableRow>
+              <TableHead className="w-[100px]">Sport</TableHead>
+              <TableHead>Game</TableHead>
+              <TableHead>Pick</TableHead>
+              <TableHead>Odds</TableHead>
+              <TableHead>Confidence</TableHead>
+              <TableHead>Units</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {locks.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  No locks found. Create your first lock to get started.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {locks.map((lock) => (
-                <TableRow key={lock.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <TableCell className="py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm font-medium text-gray-700">
-                        {getInitials(lock.pick)}
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">{lock.game}</div>
-                        <div className="text-sm text-gray-500">{lock.pick}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-medium text-gray-900">{lock.sport}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-medium text-gray-900">{lock.confidence}%</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-gray-700">{lock.endingDate}</span>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(lock.status)}</TableCell>
-                  <TableCell>
+            ) : (
+              locks.map((lock) => (
+                <TableRow key={lock.id}>
+                  <TableCell className="font-medium">{lock.sport || "N/A"}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{lock.game || "N/A"}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{lock.pick || "N/A"}</TableCell>
+                  <TableCell>{safeDisplayNumber(lock.odds)}</TableCell>
+                  <TableCell>{safeDisplayNumber(lock.confidence)}%</TableCell>
+                  <TableCell>{safeDisplayNumber(lock.units)}</TableCell>
+                  <TableCell>{getStatusBadge(lock.status, lock)}</TableCell>
+                  <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleEdit(lock)} className="flex items-center gap-2">
-                          <Edit className="h-4 w-4" />
+                          <Pencil className="h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleDelete(lock.id)}
+                          onClick={() => handleDelete(lock)}
                           className="flex items-center gap-2 text-red-600"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -478,23 +520,137 @@ export function LockAdmin() {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              ))
+            )}
+          </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell colSpan={8} className="text-center">
+                Showing {locks.length} of {totalLocks} locks (Page {currentPage} of {totalPages})
+              </TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2">
+          <div className="flex-1 text-sm text-muted-foreground">
+            Showing {Math.min((currentPage - 1) * 10 + 1, totalLocks)} to {Math.min(currentPage * 10, totalLocks)} of{" "}
+            {totalLocks} locks
+          </div>
+          <div className="flex items-center space-x-6 lg:space-x-8">
+            <div className="flex items-center space-x-2">
+              <p className="text-sm font-medium">Page</p>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  className="h-8 w-8 p-0 bg-transparent"
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage <= 1 || isLoading}
+                >
+                  <span className="sr-only">Go to previous page</span>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum
+                    if (totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i
+                    } else {
+                      pageNum = currentPage - 2 + i
+                    }
+
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        className="h-8 w-8 p-0"
+                        onClick={() => onPageChange(pageNum)}
+                        disabled={isLoading}
+                      >
+                        {pageNum}
+                      </Button>
+                    )
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  className="h-8 w-8 p-0 bg-transparent"
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages || isLoading}
+                >
+                  <span className="sr-only">Go to next page</span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Lock</DialogTitle>
+            <DialogDescription>Edit the lock details.</DialogDescription>
+          </DialogHeader>
+          <LockForm
+            formData={formData}
+            onInputChange={handleInputChange}
+            onSubmit={handleUpdate}
+            isEdit={true}
+            isSubmitting={updateLockMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Edit className="h-5 w-5" />
-              Edit Lock
+              <Trash2 className="h-5 w-5 text-red-600" />
+              Delete Lock
             </DialogTitle>
-            <DialogDescription>Update the lock details and analysis</DialogDescription>
+            <DialogDescription>
+              Are you sure you want to delete this lock? This action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
-          <LockForm onSubmit={handleUpdate} isEdit={true} />
+          {lockToDelete && (
+            <div className="py-4">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="font-medium text-gray-900">{lockToDelete.game}</p>
+                <p className="text-sm text-gray-600">{lockToDelete.pick}</p>
+                <p className="text-sm text-gray-500">{lockToDelete.sport}</p>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleteLockMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={deleteLockMutation.isPending}>
+              {deleteLockMutation.isPending ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Deleting...
+                </div>
+              ) : (
+                "Delete Lock"
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

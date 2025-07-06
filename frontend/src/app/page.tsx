@@ -11,7 +11,7 @@ import JoinCommunitySection from "./components/Community"
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
+     <Navbar />
       <HeroSection />
       <HowWeWorks />
     <Benefits />

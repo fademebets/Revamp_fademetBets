@@ -1,25 +1,35 @@
 "use client"
 
+import { useState, useEffect } from "react"
+import { lockApi } from "@/lib/lockofthedayApi"
 import { TrendingUp, Target, DollarSign, BarChart3, Calendar, Trophy } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 
 export default function LockOfTheDay() {
-  const lockData = {
-    sport: "NFL",
-    customSport: "",
-    game: "Kansas City Chiefs vs Buffalo Bills",
-    pick: "Kansas City Chiefs -3.5",
-    odds: "-110",
-    confidence: "High",
-    units: "3",
-    analysis:
-      "The Chiefs have been dominant at home this season with a 7-1 record. Their offense has been clicking on all cylinders, averaging 28.5 points per game over their last 6 games. Buffalo is dealing with key injuries on their offensive line, which could be problematic against Kansas City's pass rush. The Chiefs also have the better coaching staff and more playoff experience. This line feels too low for a team of Kansas City's caliber at home.",
-  }
+  const [lock, setLock] = useState<any | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchLock = async () => {
+      try {
+        const { data } = await lockApi.getActiveLock()
+        setLock(data)
+      } catch (error) {
+        console.error("Failed to fetch Lock of the Day", error)
+        setLock(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchLock()
+  }, [])
 
   const getConfidenceColor = (confidence: string) => {
-    switch (confidence.toLowerCase()) {
+    const value = confidence?.toLowerCase()
+    switch (value) {
       case "high":
         return "bg-green-100 text-green-800 border-green-200"
       case "medium":
@@ -29,6 +39,24 @@ export default function LockOfTheDay() {
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-700 text-lg font-semibold">
+        Loading Lock of the Day...
+      </div>
+    )
+  }
+
+  if (!lock) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-center p-6">
+        <Trophy className="h-12 w-12 text-red-600 mb-4" />
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">No Lock of the Day Available</h2>
+        <p className="text-slate-600">Please check back later for today's premium pick.</p>
+      </div>
+    )
   }
 
   return (
@@ -50,10 +78,10 @@ export default function LockOfTheDay() {
               <div>
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
                   <Target className="h-6 w-6" />
-                  {lockData.sport || lockData.customSport} Pick
+                  {lock.sport}
                 </CardTitle>
                 <CardDescription className="text-red-100 text-lg mt-1">
-                  {new Date().toLocaleDateString("en-US", {
+                  {new Date(lock.createdDate).toLocaleDateString("en-US", {
                     weekday: "long",
                     year: "numeric",
                     month: "long",
@@ -62,8 +90,8 @@ export default function LockOfTheDay() {
                 </CardDescription>
               </div>
               <div className="text-right">
-                <Badge className={`${getConfidenceColor(lockData.confidence)} bg-red-400 border-red-400 text-sm text-white font-semibold`}>
-                  {lockData.confidence} Confidence
+                <Badge className={`${getConfidenceColor(lock.confidence)} text-sm font-semibold`}>
+                  {lock.confidence} Confidence
                 </Badge>
               </div>
             </div>
@@ -77,7 +105,7 @@ export default function LockOfTheDay() {
                 Matchup
               </h3>
               <div className="bg-red-50 rounded-lg p-4">
-                <p className="text-2xl font-bold text-slate-900 text-center">{lockData.game}</p>
+                <p className="text-2xl font-bold text-slate-900 text-center">{lock.game}</p>
               </div>
             </div>
 
@@ -88,7 +116,7 @@ export default function LockOfTheDay() {
                   <TrendingUp className="h-6 w-6 text-red-600" />
                 </div>
                 <h4 className="font-semibold text-slate-700 mb-1">The Pick</h4>
-                <p className="text-lg font-bold text-red-700">{lockData.pick}</p>
+                <p className="text-lg font-bold text-red-700">{lock.pick}</p>
               </div>
 
               <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
@@ -96,7 +124,7 @@ export default function LockOfTheDay() {
                   <DollarSign className="h-6 w-6 text-red-600" />
                 </div>
                 <h4 className="font-semibold text-slate-700 mb-1">Odds</h4>
-                <p className="text-lg font-bold text-red-700">{lockData.odds}</p>
+                <p className="text-lg font-bold text-red-700">{lock.odds}</p>
               </div>
 
               <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
@@ -104,7 +132,7 @@ export default function LockOfTheDay() {
                   <BarChart3 className="h-6 w-6 text-red-600" />
                 </div>
                 <h4 className="font-semibold text-slate-700 mb-1">Units</h4>
-                <p className="text-lg font-bold text-red-700">{lockData.units} Units</p>
+                <p className="text-lg font-bold text-red-700">{lock.units} Units</p>
               </div>
             </div>
 
@@ -117,15 +145,14 @@ export default function LockOfTheDay() {
                 Expert Analysis
               </h3>
               <div className="bg-red-50 rounded-lg p-6 border-l-4 border-red-600">
-                <p className="text-slate-700 leading-relaxed text-lg">{lockData.analysis}</p>
+                <p className="text-slate-700 leading-relaxed text-lg">{lock.analysis}</p>
               </div>
             </div>
 
             {/* Disclaimer */}
             <div className="mt-8 p-4 bg-red-100 rounded-lg border border-red-200">
               <p className="text-sm text-red-800 text-center">
-                <strong>Disclaimer:</strong> Gambling involves risk. Please bet responsibly and within your means. This
-                is for entertainment purposes only.
+                <strong>Disclaimer:</strong> Gambling involves risk. Please bet responsibly and within your means. This is for entertainment purposes only.
               </p>
             </div>
           </CardContent>

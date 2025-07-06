@@ -5,7 +5,7 @@ import { useState } from "react"
 
 import { Sidebar } from "./userProfile/components/layout/sidebar"
 import { Header } from "./userProfile/components/layout/header"
-import { LogoutOverlay } from "@/components/ui/logout-overlay"
+import { LogoutLoadingScreen } from "../login/components/logout-loading-screen"
 
 export default function DoctorLayout({
   children,
@@ -37,13 +37,14 @@ export default function DoctorLayout({
           setIsLoggingOut={setIsLoggingOut}
         />
 
+              <LogoutLoadingScreen isVisible={isLoggingOut} />
+
+
         <main className="flex flex-1 flex-col gap-4 p-3 md:gap-6 md:p-6 lg:gap-8 lg:p-8">
           {children}
         </main>
       </div>
 
-      {/* Logout overlay here */}
-      <LogoutOverlay isLoggingOut={isLoggingOut} />
     </div>
   )
 }

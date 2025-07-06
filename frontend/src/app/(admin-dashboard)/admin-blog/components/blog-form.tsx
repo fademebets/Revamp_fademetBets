@@ -1,10 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { X, Upload, Plus } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,35 +11,17 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Image from "next/image"
-
-interface BlogFormProps {
-  blog?: {
-    id: string
-    title: string
-    category: string
-    content: string
-    featuredImage: string
-    tags: string[]
-    isPublished: boolean
-    metaDescription: string
-    slug: string
-  }
-  onSave?: (blogData: any) => void
-  onCancel?: () => void
-}
-
-const categories = [
-  { value: "crypto-payments", label: "Crypto Payments" },
-  { value: "web-development", label: "Web Development" },
-  { value: "blockchain", label: "Blockchain" },
-  { value: "technology", label: "Technology" },
-  { value: "tutorials", label: "Tutorials" },
-]
+import { useBlogStore } from "@/store/blog-store"
+import { toast } from "sonner"
+import type { CreateBlogData, BlogFormProps } from "@/types/blog"
+import { blogApi } from "@/lib/blogApi"
 
 export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
-  const [formData, setFormData] = useState({
+  const queryClient = useQueryClient()
+  const { addBlog, updateBlog } = useBlogStore()
+
+  const [formData, setFormData] = useState<CreateBlogData>({
     title: blog?.title || "",
     category: blog?.category || "",
     content: blog?.content || "",
@@ -48,12 +29,46 @@ export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
     tags: blog?.tags || [],
     isPublished: blog?.isPublished || false,
     metaDescription: blog?.metaDescription || "",
+    metaTitle: blog?.metaTitle || "",
     slug: blog?.slug || "",
   })
 
   const [newTag, setNewTag] = useState("")
 
-  const handleInputChange = (field: string, value: any) => {
+// Create mutation
+const createMutation = useMutation({
+  mutationFn: blogApi.createBlog,
+  onSuccess: (newBlog) => {
+    addBlog(newBlog)
+    queryClient.invalidateQueries({ queryKey: ["blogs"] })
+    toast.success("Blog post created successfully")
+    onSave?.(newBlog)
+  },
+  onError: (error) => {
+    toast.error("Failed to create blog post")
+  },
+})
+
+// Update mutation
+const updateMutation = useMutation({
+  mutationFn: ({ id, data }: { id: string; data: Partial<CreateBlogData> }) =>
+    blogApi.updateBlog(id, data),
+  onSuccess: (updatedBlog) => {
+    if (blog?.id) {
+      updateBlog(blog.id, updatedBlog)
+      queryClient.invalidateQueries({ queryKey: ["blogs"] })
+      toast.success("Blog post updated successfully")
+      onSave?.(updatedBlog)
+    }
+  },
+  onError: (error) => {
+    toast.error("Failed to update blog post")
+  },
+})
+
+
+
+  const handleInputChange = (field: keyof CreateBlogData, value: any) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -73,6 +88,10 @@ export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
       // Only auto-generate slug for new posts
       handleInputChange("slug", generateSlug(title))
     }
+    // Auto-generate meta title if not set
+    if (!formData.metaTitle) {
+      handleInputChange("metaTitle", title)
+    }
   }
 
   const addTag = () => {
@@ -91,14 +110,21 @@ export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSave?.(formData)
+
+    if (blog?.id) {
+      updateMutation.mutate({ id: blog.id, data: formData })
+    } else {
+      createMutation.mutate(formData)
+    }
   }
+
+  const isLoading = createMutation.isPending || updateMutation.isPending
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{blog ? "Edit Blog Post" : "Create New Blog Post"}</h1>
-        <Button variant="outline" onClick={onCancel}>
+        <Button variant="outline" onClick={onCancel} disabled={isLoading}>
           Cancel
         </Button>
       </div>
@@ -120,6 +146,7 @@ export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
                     onChange={(e) => handleTitleChange(e.target.value)}
                     placeholder="Enter blog post title"
                     required
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -131,6 +158,7 @@ export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
                     onChange={(e) => handleInputChange("slug", e.target.value)}
                     placeholder="post-url-slug"
                     required
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -143,6 +171,18 @@ export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
                     placeholder="Write your blog post content here..."
                     className="min-h-[300px]"
                     required
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="metaTitle">Meta Title</Label>
+                  <Input
+                    id="metaTitle"
+                    value={formData.metaTitle}
+                    onChange={(e) => handleInputChange("metaTitle", e.target.value)}
+                    placeholder="SEO title (optional)"
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -155,6 +195,7 @@ export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
                     placeholder="Brief description for SEO (150-160 characters)"
                     className="min-h-[80px]"
                     maxLength={160}
+                    disabled={isLoading}
                   />
                   <p className="text-xs text-muted-foreground mt-1">{formData.metaDescription.length}/160 characters</p>
                 </div>
@@ -175,6 +216,7 @@ export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
                     id="published"
                     checked={formData.isPublished}
                     onCheckedChange={(checked) => handleInputChange("isPublished", checked)}
+                    disabled={isLoading}
                   />
                 </div>
               </CardContent>
@@ -185,18 +227,16 @@ export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
                 <CardTitle>Category</CardTitle>
               </CardHeader>
               <CardContent>
-                <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.value} value={category.value}>
-                        {category.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div>
+                  <Label htmlFor="category">Category</Label>
+                  <Input
+                    id="category"
+                    value={formData.category}
+                    onChange={(e) => handleInputChange("category", e.target.value)}
+                    placeholder="Enter category (e.g., Technology, Tutorials, etc.)"
+                    disabled={isLoading}
+                  />
+                </div>
               </CardContent>
             </Card>
 
@@ -212,20 +252,23 @@ export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
                     value={formData.featuredImage}
                     onChange={(e) => handleInputChange("featuredImage", e.target.value)}
                     placeholder="https://example.com/image.jpg"
+                    disabled={isLoading}
                   />
                 </div>
+
                 {formData.featuredImage && (
                   <div className="aspect-video bg-muted rounded-md overflow-hidden">
                     <Image
-                    width={200}
-                    height={200}
+                      width={200}
+                      height={200}
                       src={formData.featuredImage || "/placeholder.svg"}
                       alt="Featured"
                       className="w-full h-full object-cover"
                     />
                   </div>
                 )}
-                <Button type="button" variant="outline" className="w-full">
+
+                <Button type="button" variant="outline" className="w-full bg-transparent" disabled={isLoading}>
                   <Upload className="h-4 w-4 mr-2" />
                   Upload Image
                 </Button>
@@ -243,16 +286,23 @@ export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder="Add a tag"
                     onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+                    disabled={isLoading}
                   />
-                  <Button type="button" onClick={addTag} size="icon">
+                  <Button type="button" onClick={addTag} size="icon" disabled={isLoading}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
+
                 <div className="flex flex-wrap gap-2">
                   {formData.tags.map((tag) => (
                     <Badge key={tag} variant="secondary" className="flex items-center gap-1">
                       {tag}
-                      <button type="button" onClick={() => removeTag(tag)} className="ml-1 hover:text-destructive">
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="ml-1 hover:text-destructive"
+                        disabled={isLoading}
+                      >
                         <X className="h-3 w-3" />
                       </button>
                     </Badge>
@@ -264,10 +314,12 @@ export function BlogForm({ blog, onSave, onCancel }: BlogFormProps) {
         </div>
 
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
             Cancel
           </Button>
-          <Button type="submit">{blog ? "Update Post" : "Create Post"}</Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (blog ? "Updating..." : "Creating...") : blog ? "Update Post" : "Create Post"}
+          </Button>
         </div>
       </form>
     </div>

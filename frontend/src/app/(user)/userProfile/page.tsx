@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { User, Lock, Shield, Camera, Eye, EyeOff, Smartphone, Mail, Phone, MapPin, Save, QrCode } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,15 +11,158 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "sonner"
+import { useProfileStore } from "@/store/user-profile-store";
+import { profileApi } from "@/lib/user-profile-api";
 
 export default function ProfilePage() {
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const { user, isLoading, fetchProfile, updateProfile } = useProfileStore()
+
+  // Form states
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    phoneNumber: "",
+    address: "",
+  })
+
+  // Password states
+  const [passwordData, setPasswordData] = useState({
+    newPassword: "",
+    confirmPassword: "",
+  })
+
+  // UI states
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [smsNotifications, setSmsNotifications] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [isUnsubscribed, setIsUnsubscribed] = useState(false)
+
+
+  // Load profile data on component mount
+  useEffect(() => {
+    fetchProfile()
+  }, [fetchProfile])
+
+  // Update form data when user data changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        phoneNumber: user.phoneNumber || "",
+        address: user.address || "",
+      })
+    }
+  }, [user])
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const handlePasswordChange = (field: string, value: string) => {
+    setPasswordData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const handleSaveProfile = async () => {
+    if (!user) return
+
+    setIsUpdating(true)
+    try {
+      await updateProfile(formData)
+      toast.success("Profile updated successfully!")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update profile")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    if (!passwordData.newPassword || !passwordData.confirmPassword) {
+      toast.error("Please fill in both password fields")
+      return
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("New password and confirm password do not match")
+      return
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters long")
+      return
+    }
+
+    setIsChangingPassword(true)
+    try {
+      await profileApi.changePassword({ newPassword: passwordData.newPassword })
+      toast.success("Password changed successfully!")
+      setPasswordData({ newPassword: "", confirmPassword: "" })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to change password")
+    } finally {
+      setIsChangingPassword(false)
+    }
+  }
+
+  const getInitials = () => {
+    if (!user) return "U"
+    return `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
+  }
+
+  const getFullName = () => {
+    if (!user) return "User"
+    return `${user.firstName || ""} ${user.lastName || ""}`.trim()
+  }
+
+
+
+  const handleToggle = (value: boolean) => {
+    if (isUnsubscribed) {
+      toast.error("Subscription is already cancelled.")
+      return
+    }
+    if (value) {
+      setDialogOpen(true)
+    }
+  }
+
+  const handleUnsubscribe = async () => {
+    try {
+      await profileApi.unsubscribe()
+      toast.success("Your subscription has been cancelled.")
+      setIsUnsubscribed(true)
+      setSmsNotifications(true) // keep it ON
+      setDialogOpen(false)
+    } catch (err: any) {
+      toast.error(err.message)
+      setDialogOpen(false)
+    }
+  }
+  if (isLoading && !user) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -33,10 +176,12 @@ export default function ProfilePage() {
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <Button
             size="sm"
+            onClick={handleSaveProfile}
+            disabled={isUpdating}
             className="h-8 gap-1 px-5 bg-[#D92A1B] text-white hover:bg-red-700 transition-colors duration-300 ease-in-out"
           >
             <Save className="h-3.5 w-3.5" />
-            <span className="xs:inline">Save Changes</span>
+            <span className="xs:inline">{isUpdating ? "Saving..." : "Save Changes"}</span>
           </Button>
         </div>
       </div>
@@ -59,54 +204,56 @@ export default function ProfilePage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" placeholder="John" defaultValue="John" />
+                  <Input
+                    id="firstName"
+                    placeholder="John"
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange("firstName", e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" placeholder="Doe" defaultValue="Doe" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="john.doe@example.com"
-                    defaultValue="john.doe@example.com"
-                    className="pl-10"
+                    id="lastName"
+                    placeholder="Doe"
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange("lastName", e.target.value)}
                   />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="phone"
-                      placeholder="+1 (555) 123-4567"
-                      defaultValue="+1 (555) 123-4567"
-                      className="pl-10"
-                    />
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="john.doe@example.com"
+                        value={user?.email || ""}
+                        className="pl-10"
+                        disabled
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone Number */}
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="phone"
+                        placeholder="+1 (555) 123-4567"
+                        value={formData.phoneNumber}
+                        onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
-                  <Select defaultValue="est">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select timezone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="est">Eastern Time (EST)</SelectItem>
-                      <SelectItem value="cst">Central Time (CST)</SelectItem>
-                      <SelectItem value="mst">Mountain Time (MST)</SelectItem>
-                      <SelectItem value="pst">Pacific Time (PST)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="address">Address</Label>
                 <div className="relative">
@@ -114,7 +261,8 @@ export default function ProfilePage() {
                   <Textarea
                     id="address"
                     placeholder="123 Main St, City, State 12345"
-                    defaultValue="123 Main St, New York, NY 10001"
+                    value={formData.address}
+                    onChange={(e) => handleInputChange("address", e.target.value)}
                     className="pl-10 min-h-[80px]"
                   />
                 </div>
@@ -134,29 +282,6 @@ export default function ProfilePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
-                <div className="relative">
-                  <Input
-                    id="currentPassword"
-                    type={showCurrentPassword ? "text" : "password"}
-                    placeholder="Enter current password"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  >
-                    {showCurrentPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="newPassword">New Password</Label>
@@ -165,6 +290,8 @@ export default function ProfilePage() {
                       id="newPassword"
                       type={showNewPassword ? "text" : "password"}
                       placeholder="Enter new password"
+                      value={passwordData.newPassword}
+                      onChange={(e) => handlePasswordChange("newPassword", e.target.value)}
                     />
                     <Button
                       type="button"
@@ -188,6 +315,8 @@ export default function ProfilePage() {
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm new password"
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => handlePasswordChange("confirmPassword", e.target.value)}
                     />
                     <Button
                       type="button"
@@ -214,6 +343,13 @@ export default function ProfilePage() {
                   <li>• Contains at least one special character</li>
                 </ul>
               </div>
+              <Button
+                onClick={handleChangePassword}
+                disabled={isChangingPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                className="w-full bg-[#D92A1B] text-white hover:bg-red-700"
+              >
+                {isChangingPassword ? "Changing Password..." : "Change Password"}
+              </Button>
             </CardContent>
           </Card>
 
@@ -267,26 +403,22 @@ export default function ProfilePage() {
                 <div className="relative">
                   <Avatar className="h-24 w-24 ring-4 ring-background">
                     <AvatarImage src="/user-avatar.png" alt="Profile" />
-                    <AvatarFallback className="bg-red-500 text-white text-xl font-semibold">JD</AvatarFallback>
+                    <AvatarFallback className="bg-red-500 text-white text-xl font-semibold">
+                      {getInitials()}
+                    </AvatarFallback>
                   </Avatar>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </Button>
+
                 </div>
                 <div className="text-center">
-                  <h3 className="font-semibold">John Doe</h3>
-                  <p className="text-sm text-muted-foreground">Premium Member</p>
+                  <h3 className="font-semibold">{getFullName()}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {user?.subscriptionStatus === "active" ? "Premium Member" : "Free Member"}
+                  </p>
                   <Badge variant="secondary" className="mt-2 bg-red-50 text-red-700">
-                    Active
+                    {user?.subscriptionStatus === "active" ? "Active" : "Inactive"}
                   </Badge>
                 </div>
-                <Button variant="outline" size="sm" className="w-full">
-                  Change Picture
-                </Button>
+
               </div>
             </CardContent>
           </Card>
@@ -300,16 +432,23 @@ export default function ProfilePage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Account Type</span>
-                  <Badge className="bg-red-500 hover:bg-red-600">Premium</Badge>
+                  <Badge className="bg-red-500 hover:bg-red-600">
+                    {user?.subscriptionStatus === "active" ? "Premium" : "Expired"}
+                  </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Member Since</span>
-                  <span className="text-sm text-muted-foreground">Jan 2024</span>
+               <div className="flex items-center justify-between">
+                  <span className="text-sm">Subscription End Date</span>
+                  <span className="text-sm text-muted-foreground">
+                    {user?.subscriptionEndDate
+                      ? new Date(user.subscriptionEndDate).toLocaleDateString('en-US', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })
+                      : 'N/A'}
+                  </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Last Login</span>
-                  <span className="text-sm text-muted-foreground">2 hours ago</span>
-                </div>
+
                 <Separator />
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Email Verified</span>
@@ -318,7 +457,7 @@ export default function ProfilePage() {
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Phone Verified</span>
+                  <span className="text-sm">ID Verified</span>
                   <Badge variant="secondary" className="bg-green-50 text-green-700">
                     Verified
                   </Badge>
@@ -341,26 +480,56 @@ export default function ProfilePage() {
                   </div>
                   <Switch
                     checked={emailNotifications}
-                    onCheckedChange={setEmailNotifications}
+                    onCheckedChange={(value) => {
+                      if (!value) {
+                        toast.error('You cannot disable email notifications.');
+                        return;  // Do not change state
+                      }
+                      setEmailNotifications(value);
+                    }}
                     className="data-[state=checked]:bg-red-500"
                   />
+
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">SMS Notifications</Label>
-                    <p className="text-xs text-muted-foreground">Receive updates via SMS</p>
-                  </div>
-                  <Switch
-                    checked={smsNotifications}
-                    onCheckedChange={setSmsNotifications}
-                    className="data-[state=checked]:bg-red-500"
-                  />
-                </div>
+        <div className="space-y-0.5">
+          <span className="text-sm font-medium">Subscription Cancel</span>
+          <p className="text-xs text-muted-foreground">Cancel your Subscription</p>
+        </div>
+        <Switch
+          checked={smsNotifications}
+          onCheckedChange={handleToggle}
+          className="data-[state=checked]:bg-red-500"
+        />
+      </div>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Are you sure you want to cancel your subscription?</DialogTitle>
+      <p className="text-sm text-muted-foreground mt-2">
+        By canceling, you'll lose access to all premium features, including exclusive content, priority support, and future updates.
+      </p>
+      <p className="text-sm text-muted-foreground mt-1">
+        We’d be sad to see you go. If there’s anything we can improve, let us know — your feedback matters!
+      </p>
+    </DialogHeader>
+    <DialogFooter className="flex justify-end gap-2 mt-4">
+      <Button variant="outline" onClick={() => setDialogOpen(false)}>
+        Keep Subscription
+      </Button>
+      <Button className="bg-red-500 hover:bg-red-600" onClick={handleUnsubscribe}>
+        Yes, Cancel It
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
     </>
   )
 }

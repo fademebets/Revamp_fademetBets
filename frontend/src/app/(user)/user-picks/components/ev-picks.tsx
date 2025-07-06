@@ -1,48 +1,33 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { getActiveEvPicks } from "@/lib/ev-picks"
 import { TrendingUp, Target, DollarSign, BarChart3, Calendar, Zap, Star } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { toast } from "sonner"
 
 export default function EVPicks() {
-  // Sample data for 3 EV picks
-  const evPicks = [
-    {
-      sport: "NBA",
-      customSport: "",
-      game: "Los Angeles Lakers vs Boston Celtics",
-      pick: "Lakers +7.5",
-      odds: "+105",
-      confidence: "High",
-      units: "2.5",
-      analysis:
-        "The Lakers have been undervalued by the market recently, covering 8 of their last 10 games as underdogs. Boston is on a back-to-back and historically struggles in these spots, going 3-7 ATS in their last 10 B2B games. The line movement suggests sharp money on LA.",
-    },
-    {
-      sport: "NFL",
-      customSport: "",
-      game: "Green Bay Packers vs Detroit Lions",
-      pick: "Over 48.5 Total Points",
-      odds: "-108",
-      confidence: "Medium",
-      units: "2",
-      analysis:
-        "Both teams rank in the top 10 for offensive efficiency, and weather conditions are favorable for passing. Detroit's defense has allowed 28+ points in 6 of their last 8 home games. Green Bay's offense has been explosive, averaging 31 points over their last 5 games.",
-    },
-    {
-      sport: "NHL",
-      customSport: "",
-      game: "Tampa Bay Lightning vs Florida Panthers",
-      pick: "Lightning ML",
-      odds: "+125",
-      confidence: "High",
-      units: "3",
-      analysis:
-        "Tampa Bay has dominated this rivalry historically and comes in with their top line healthy. Florida is dealing with goaltending issues and has lost 4 straight home games. The Lightning's power play has been lethal, converting at 28% over their last 10 games.",
-    },
-  ]
+  const [evPicks, setEvPicks] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const getConfidenceColor = (confidence: string) => {
-    switch (confidence.toLowerCase()) {
+  useEffect(() => {
+    const fetchPicks = async () => {
+      const { evs, message } = await getActiveEvPicks()
+      if (evs.length === 0) {
+        toast.info(message || "No EV picks available right now.")
+      }
+      setEvPicks(evs)
+      setLoading(false)
+    }
+
+    fetchPicks()
+  }, [])
+
+  const getConfidenceColor = (confidence: string | number | undefined) => {
+    const value = String(confidence).toLowerCase()
+    switch (value) {
       case "high":
         return "bg-red-100 text-red-800 border-red-200"
       case "medium":
@@ -54,8 +39,16 @@ export default function EVPicks() {
     }
   }
 
-  const getOddsColor = (odds: string) => {
-    return odds.startsWith("+") ? "text-red-600" : "text-red-700"
+  const getOddsColor = (odds: number) => {
+    return odds >= 0 ? "text-red-600" : "text-red-700"
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-700 text-lg font-semibold">
+        Loading EV Picks...
+      </div>
+    )
   }
 
   return (
@@ -81,113 +74,122 @@ export default function EVPicks() {
         </div>
 
         {/* Picks Grid */}
-        <div className="grid lg:grid-cols-2 md:grid-cols-2 gap-6">
-          {evPicks.map((pick, index) => (
-            <Card key={index} className="shadow-xl border-0 bg-white hover:shadow-2xl transition-shadow duration-300">
-              <CardHeader className="bg-gradient-to-r py-5 from-red-600 to-red-700 text-white rounded-t-lg">
-                <div className="flex items-center justify-between">
+        {evPicks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center py-16 bg-red-50 rounded-lg border border-red-100 shadow-inner">
+            <Zap className="h-10 w-10 text-red-600 mb-4 animate-pulse" />
+            <h2 className="text-2xl font-bold text-red-800 mb-2">No EV Picks Available</h2>
+            <p className="text-red-700 text-sm mb-4 max-w-sm">
+              There are no active EV picks available at the moment. Check back later — new opportunities are updated throughout the day.
+            </p>
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-2 md:grid-cols-2 gap-6">
+            {evPicks.map((pick, index) => (
+              <Card key={pick._id || index} className="shadow-xl border-0 bg-white hover:shadow-2xl transition-shadow duration-300">
+                <CardHeader className="bg-gradient-to-r py-5 from-red-600 to-red-700 text-white rounded-t-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl font-bold flex items-center gap-2">
+                        <Target className="h-5 w-5" />
+                        EV Pick
+                      </CardTitle>
+                      <CardDescription className="text-red-100 mt-1">Pick #{index + 1}</CardDescription>
+                    </div>
+                    <Badge className={`${getConfidenceColor(pick.confidence)} text-xs font-semibold`}>
+                      Confidence: {pick.confidence}
+                    </Badge>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="p-6">
+                  <div className="mb-6">
+                    <h3 className="text-sm font-semibold text-red-800 mb-2 flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      Title
+                    </h3>
+                    <div className="bg-red-50 rounded-lg p-3 border border-red-100">
+                      <p className="text-lg font-bold text-red-900 text-center leading-tight">{pick.title}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 mb-6">
+                    <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
+                      <TrendingUp className="h-4 w-4 text-red-600 mx-auto mb-1" />
+                      <h4 className="text-xs font-semibold text-red-700 mb-1">EV %</h4>
+                      <p className="text-sm font-bold text-red-800 leading-tight">{pick.evValue}%</p>
+                    </div>
+
+                    <div className="text-center p-3 bg-white rounded-lg border border-red-200">
+                      <DollarSign className="h-4 w-4 text-red-600 mx-auto mb-1" />
+                      <h4 className="text-xs font-semibold text-red-700 mb-1">Odds</h4>
+                      <p className={`text-sm font-bold ${getOddsColor(pick.odds)}`}>{pick.odds}</p>
+                    </div>
+
+                    <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
+                      <BarChart3 className="h-4 w-4 text-red-600 mx-auto mb-1" />
+                      <h4 className="text-xs font-semibold text-red-700 mb-1">Cover %</h4>
+                      <p className="text-sm font-bold text-red-800">{pick.coverPercentage}%</p>
+                    </div>
+                  </div>
+
+                  <Separator className="my-4 bg-red-200" />
+
                   <div>
-                    <CardTitle className="text-xl font-bold flex items-center gap-2">
-                      <Target className="h-5 w-5" />
-                      {pick.sport || pick.customSport}
-                    </CardTitle>
-                    <CardDescription className="text-red-100 mt-1">Pick #{index + 1}</CardDescription>
+                    <h3 className="text-sm font-semibold text-red-800 mb-3 flex items-center gap-1">
+                      <BarChart3 className="h-4 w-4" />
+                      Description
+                    </h3>
+                    <div className="bg-gradient-to-r from-red-50 to-white rounded-lg p-4 border-l-4 border-red-500">
+                      <p className="text-red-900 text-sm leading-relaxed">{pick.description}</p>
+                    </div>
                   </div>
-                  <Badge className={`${getConfidenceColor(pick.confidence)} text-xs font-semibold`}>
-                    {pick.confidence}
-                  </Badge>
-                </div>
-              </CardHeader>
-
-              <CardContent className="p-6">
-                {/* Game Information */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-red-800 mb-2 flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    Matchup
-                  </h3>
-                  <div className="bg-red-50 rounded-lg p-3 border border-red-100">
-                    <p className="text-lg font-bold text-red-900 text-center leading-tight">{pick.game}</p>
-                  </div>
-                </div>
-
-                {/* Pick Details */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
-                    <TrendingUp className="h-4 w-4 text-red-600 mx-auto mb-1" />
-                    <h4 className="text-xs font-semibold text-red-700 mb-1">Pick</h4>
-                    <p className="text-sm font-bold text-red-800 leading-tight">{pick.pick}</p>
-                  </div>
-
-                  <div className="text-center p-3 bg-white rounded-lg border border-red-200">
-                    <DollarSign className="h-4 w-4 text-red-600 mx-auto mb-1" />
-                    <h4 className="text-xs font-semibold text-red-700 mb-1">Odds</h4>
-                    <p className={`text-sm font-bold ${getOddsColor(pick.odds)}`}>{pick.odds}</p>
-                  </div>
-
-                  <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
-                    <BarChart3 className="h-4 w-4 text-red-600 mx-auto mb-1" />
-                    <h4 className="text-xs font-semibold text-red-700 mb-1">Units</h4>
-                    <p className="text-sm font-bold text-red-800">{pick.units}U</p>
-                  </div>
-                </div>
-
-                <Separator className="my-4 bg-red-200" />
-
-                {/* Analysis Section */}
-                <div>
-                  <h3 className="text-sm font-semibold text-red-800 mb-3 flex items-center gap-1">
-                    <BarChart3 className="h-4 w-4" />
-                    Analysis
-                  </h3>
-                  <div className="bg-gradient-to-r from-red-50 to-white rounded-lg p-4 border-l-4 border-red-500">
-                    <p className="text-red-900 text-sm leading-relaxed">{pick.analysis}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* Summary Stats */}
-        <div className="mt-12 bg-white rounded-xl shadow-lg p-6 border border-red-100">
-          <h2 className="text-2xl font-bold text-red-900 mb-6 text-center flex items-center justify-center gap-2">
-            <Star className="h-6 w-6 text-red-600" />
-            Today's EV Summary
-          </h2>
-          <div className="grid md:grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <h3 className="text-sm font-semibold text-red-700 mb-1">Total Picks</h3>
-              <p className="text-2xl font-bold text-red-800">{evPicks.length}</p>
-            </div>
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <h3 className="text-sm font-semibold text-red-700 mb-1">Total Units</h3>
-              <p className="text-2xl font-bold text-red-800">
-                {evPicks.reduce((sum, pick) => sum + Number.parseFloat(pick.units), 0).toFixed(1)}U
-              </p>
-            </div>
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <h3 className="text-sm font-semibold text-red-700 mb-1">High Confidence</h3>
-              <p className="text-2xl font-bold text-red-800">
-                {evPicks.filter((pick) => pick.confidence === "High").length}
-              </p>
-            </div>
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <h3 className="text-sm font-semibold text-red-700 mb-1">Sports Covered</h3>
-              <p className="text-2xl font-bold text-red-800">
-                {new Set(evPicks.map((pick) => pick.sport || pick.customSport)).size}
-              </p>
+        {evPicks.length > 0 && (
+          <div className="mt-12 bg-white rounded-xl shadow-lg p-6 border border-red-100">
+            <h2 className="text-2xl font-bold text-red-900 mb-6 text-center flex items-center justify-center gap-2">
+              <Star className="h-6 w-6 text-red-600" />
+              Today's EV Summary
+            </h2>
+            <div className="grid md:grid-cols-4 gap-6">
+              <div className="text-center p-4 bg-red-50 rounded-lg">
+                <h3 className="text-sm font-semibold text-red-700 mb-1">Total Picks</h3>
+                <p className="text-2xl font-bold text-red-800">{evPicks.length}</p>
+              </div>
+              <div className="text-center p-4 bg-red-50 rounded-lg">
+                <h3 className="text-sm font-semibold text-red-700 mb-1">High Confidence</h3>
+                <p className="text-2xl font-bold text-red-800">
+                  {
+                    evPicks.filter((pick) => {
+                      const numericConfidence = parseFloat(String(pick.confidence).replace("%", "")) || 0
+                      return numericConfidence >= 80
+                    }).length
+                  }
+                </p>
+              </div>
+              <div className="text-center p-4 bg-red-50 rounded-lg">
+                <h3 className="text-sm font-semibold text-red-700 mb-1">Average EV%</h3>
+                <p className="text-2xl font-bold text-red-800">
+                  {(
+                    evPicks.reduce((sum, pick) => sum + (pick.evValue || 0), 0) / evPicks.length
+                  ).toFixed(1)}
+                  %
+                </p>
+              </div>
+              <div className="text-center p-4 bg-red-50 rounded-lg">
+                <h3 className="text-sm font-semibold text-red-700 mb-1">Top Cover %</h3>
+                <p className="text-2xl font-bold text-red-800">
+                  {Math.max(...evPicks.map((pick) => pick.coverPercentage || 0))}%
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Disclaimer */}
-        <div className="mt-8 p-4 bg-red-100 rounded-lg border border-red-200">
-          <p className="text-sm text-red-800 text-center">
-            <strong>EV Disclaimer:</strong> Expected Value picks are based on mathematical analysis and market
-            inefficiencies. Past performance does not guarantee future results. Please bet responsibly.
-          </p>
-        </div>
+        )}
       </div>
     </div>
   )

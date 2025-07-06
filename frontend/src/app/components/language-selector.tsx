@@ -1,51 +1,51 @@
 "use client"
-
-import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ChevronDown, Globe } from "lucide-react"
 
 interface LanguageSelectorProps {
   language: string
-  setLanguage: (lang: string) => void
+  setLanguage: (language: string) => void
+  isDark?: boolean
 }
 
-export default function LanguageSelector({ language, setLanguage }: LanguageSelectorProps) {
-  const [open, setOpen] = useState(false)
+const languages = [
+  { code: "en", name: "English", flag: "🇺🇸" },
 
-  const toggleDropdown = () => setOpen(!open)
+]
 
-  const selectLanguage = (lang: string) => {
-    setLanguage(lang)
-    setOpen(false)
-    // You can add your logic to change language here (e.g., i18n)
-  }
+export default function LanguageSelector({ language, setLanguage, isDark = false }: LanguageSelectorProps) {
+  const currentLanguage = languages.find((lang) => lang.name === language) || languages[0]
 
   return (
-    <div className="relative inline-block text-white text-sm">
-      <button
-        onClick={toggleDropdown}
-        className="flex items-center space-x-1 hover:text-green-400 transition-colors focus:outline-none"
-      >
-        <Globe className="w-4 h-4" />
-        <span>{language}</span>
-        <ChevronDown className="w-4 h-4" />
-      </button>
-
-      {open && (
-        <div className="absolute right-0 mt-2 w-32 bg-black border border-gray-700 rounded shadow-lg z-50">
-          <button
-            onClick={() => selectLanguage("English")}
-            className="block w-full text-left px-4 py-2 hover:bg-green-500 hover:text-white"
+    <DropdownMenu modal={false} >
+      <DropdownMenuTrigger asChild >
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`${
+            isDark ? "text-white hover:bg-white/10 border-white/20 hover:text-white" : "text-black hover:text-black hover:bg-gray-100 border-gray-200"
+          } border transition-colors`}
+        >
+          <Globe className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">{currentLanguage.flag}</span>
+          <span className="ml-1 text-xs">{currentLanguage.code.toUpperCase()}</span>
+          <ChevronDown className="h-3 w-3 ml-1" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        {languages.map((lang) => (
+          <DropdownMenuItem
+            key={lang.code}
+            onClick={() => setLanguage(lang.name)}
+            className={`flex items-center space-x-2 ${language === lang.name ? "bg-red-50 text-red-700" : ""}`}
           >
-            English
-          </button>
-          <button
-            onClick={() => selectLanguage("Spanish")}
-            className="block w-full text-left px-4 py-2 hover:bg-green-500 hover:text-white"
-          >
-            Spanish
-          </button>
-        </div>
-      )}
-    </div>
+            <span className="text-lg">{lang.flag}</span>
+            <span className="font-medium">{lang.name}</span>
+            {language === lang.name && <div className="ml-auto w-2 h-2 bg-red-500 rounded-full" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

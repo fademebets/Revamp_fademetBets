@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, ExternalLink } from "lucide-react"
 
-export default function Component() {
+export default function Footer() {
   const navigationLinks = [
     { name: "About Us", href: "/about" },
     { name: "How It Works", href: "/how-it-works" },

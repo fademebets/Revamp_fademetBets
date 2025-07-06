@@ -39,7 +39,7 @@ const navItems = [
     description: "Today's guaranteed pick",
 
   },
- 
+
 
 ]
 
@@ -109,31 +109,12 @@ export function Sidebar({ sidebarOpen, mobileOpen, setMobileOpen }: SidebarProps
             </nav>
           </div>
 
-          {/* Footer */}
-          <div className="border-t bg-gray-50 p-4 space-y-4">
-            {/* User Profile */}
-            <div className="flex items-center gap-3 rounded-lg bg-white p-3 shadow-sm">
-              <Avatar className="h-10 w-10 ring-2 ring-red-100">
-                <AvatarImage src="/user-avatar.png" alt="User" />
-                <AvatarFallback className="bg-red-500 text-white font-semibold">JD</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <p className="font-semibold text-gray-900">John Doe</p>
-                <p className="text-xs text-red-600 font-medium">Premium Member</p>
-              </div>
-            </div>
 
-            {/* Dark Mode Toggle */}
-            <div className="flex items-center justify-between rounded-lg bg-white p-3 shadow-sm">
-              <span className="text-sm font-medium text-gray-700">Dark Mode</span>
-              <Switch checked={darkMode} onCheckedChange={setDarkMode} className="data-[state=checked]:bg-red-500" />
-            </div>
-          </div>
         </div>
       </aside>
 
       {/* Mobile Sidebar */}
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen} >
         <SheetContent side="left" className="w-[85%] max-w-[300px] p-0 [&>button:first-child]:hidden">
           <SheetTitle className="sr-only">Mobile Navigation</SheetTitle>
 
@@ -193,26 +174,7 @@ export function Sidebar({ sidebarOpen, mobileOpen, setMobileOpen }: SidebarProps
               </nav>
             </div>
 
-            {/* Mobile Footer */}
-            <div className="border-t bg-gray-50 p-4 space-y-4">
-              {/* User Profile */}
-              <div className="flex items-center gap-3 rounded-lg bg-white p-3 shadow-sm">
-                <Avatar className="h-10 w-10 ring-2 ring-red-100">
-                  <AvatarImage src="/user-avatar.png" alt="User" />
-                  <AvatarFallback className="bg-red-500 text-white font-semibold">JD</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-900">John Doe</p>
-                  <p className="text-xs text-red-600 font-medium">Premium Member</p>
-                </div>
-              </div>
 
-              {/* Dark Mode Toggle */}
-              <div className="flex items-center justify-between rounded-lg bg-white p-3 shadow-sm">
-                <span className="text-sm font-medium text-gray-700">Dark Mode</span>
-                <Switch checked={darkMode} onCheckedChange={setDarkMode} className="data-[state=checked]:bg-red-500" />
-              </div>
-            </div>
           </div>
         </SheetContent>
       </Sheet>

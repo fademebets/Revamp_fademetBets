@@ -15,12 +15,15 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 
+import { deleteCookie } from "cookies-next"
+import { toast } from "sonner"
+
 interface HeaderProps {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
   setMobileOpen: (open: boolean) => void
   pageTitle?: string
-  setIsLoggingOut: (value: boolean) => void
+  setIsLoggingOut: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 export function Header({
@@ -30,36 +33,34 @@ export function Header({
   pageTitle = "Overview",
   setIsLoggingOut,
 }: HeaderProps) {
-  const [mounted, setMounted] = useState(false)
-  const router = useRouter()
-
-  useEffect(() => {
-
-
-
-    setMounted(true)
-  }, [])
+const router = useRouter()
 
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
 
+      // Show logout toast
+      toast.success("Logging out...")
 
+      // Clear all auth cookies
+      deleteCookie("auth-token")
+      deleteCookie("user-role")
+      deleteCookie("subscription-status")
 
+      // Wait for 2 seconds to show loading animation
       setTimeout(() => {
         setIsLoggingOut(false)
         router.replace("/login")
+        toast.success("Successfully logged out!")
       }, 2000)
     } catch (e) {
       setIsLoggingOut(false)
       console.error("Logout failed", e)
-      // Show an error toast or handle logout failure logic here
+      toast.error("Logout failed. Please try again.")
     }
   }
 
-  if (!mounted) {
-    return null
-  }
+
 
 
   return (
@@ -105,21 +106,18 @@ export function Header({
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
-              <Avatar className="h-8 w-8 bg-[#c8102e]">
-                <AvatarImage src="/placeholder.svg?height=32&width=32" alt={"User"} />
-                <AvatarFallback className="bg-[#c8102e] text-white">U</AvatarFallback>
+              <Avatar className="h-8 w-8 bg-[#c8102e]  cursor-pointer">
+                <AvatarImage alt={"User"} />
+                <AvatarFallback className="bg-[#c8102e] text-white">B</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuLabel>{"User"}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" /> Profile
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
+            <DropdownMenuItem  onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4  cursor-pointer" />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

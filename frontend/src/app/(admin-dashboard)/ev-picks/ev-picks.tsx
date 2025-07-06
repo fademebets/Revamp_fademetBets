@@ -18,7 +18,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { Pagination } from "./pagination"
 import {
   TrendingUp,
   Target,
@@ -27,207 +29,54 @@ import {
   FileText,
   Plus,
   Calendar,
-  User,
-  Filter,
   MoreHorizontal,
   Edit,
   Trash2,
+  Search,
+  Loader2,
 } from "lucide-react"
 
-interface EvPick {
-  id: string
+// Hooks and API
+import { useEvPicks, useCreateEvPick, useUpdateEvPick, useDeleteEvPick } from "@/hooks/use-ev-picks"
+import { useEvPicksStore } from "@/store/ev-picks-store"
+import type { EvPick, CreateEvPickData } from "@/types/ev"
+
+// Form data interface
+interface FormData {
   title: string
   description: string
-  odds: number
-  evValue: number
-  coverPercentage: number
-  units: number
-  status: "Active" | "Expired" | "Won" | "Lost"
-  createdDate: string
-  endingDate: string
-  sport?: string
+  odds: string
+  evValue: string
+  confidence: string
+  coverPercentage: string
+  status: string
 }
 
-const mockEvPicks: EvPick[] = [
-  {
-    id: "1",
-    title: "Over 2.5 Goals - Liverpool vs Chelsea",
-    description: "Both teams have strong attacking records with Liverpool averaging 2.8 goals per game at home...",
-    odds: 1.85,
-    evValue: 0.12,
-    coverPercentage: 65,
-    units: 2.0,
-    status: "Active",
-    createdDate: "25 June 2025",
-    endingDate: "30 July 2025",
-    sport: "Soccer",
-  },
-  {
-    id: "2",
-    title: "Patrick Mahomes Over 275.5 Passing Yards",
-    description: "Mahomes has exceeded 275 passing yards in 8 of his last 10 games...",
-    odds: 1.92,
-    evValue: 0.08,
-    coverPercentage: 72,
-    units: 1.5,
-    status: "Won",
-    createdDate: "20 June 2025",
-    endingDate: "12 August 2025",
-    sport: "NFL",
-  },
-  {
-    id: "3",
-    title: "Lakers -4.5 vs Warriors",
-    description: "Lakers have covered the spread in 6 of their last 8 home games...",
-    odds: 1.91,
-    evValue: 0.05,
-    coverPercentage: 58,
-    units: 1.0,
-    status: "Lost",
-    createdDate: "15 June 2025",
-    endingDate: "05 September 2025",
-    sport: "NBA",
-  },
-]
+// Move EvPickForm component outside to prevent recreation on every render
+interface EvPickFormProps {
+  formData: FormData
+  onInputChange: (field: string, value: string) => void
+  onSubmit: (e: React.FormEvent) => void
+  isEdit?: boolean
+  isLoading?: boolean
+}
 
-export function EvPicksAdmin() {
-  const [evPicks, setEvPicks] = useState<EvPick[]>(mockEvPicks)
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editingPick, setEditingPick] = useState<EvPick | null>(null)
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    odds: "",
-    evValue: "",
-    coverPercentage: "",
-    units: "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      description: "",
-      odds: "",
-      evValue: "",
-      coverPercentage: "",
-      units: "",
-    })
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const newPick: EvPick = {
-      id: Date.now().toString(),
-      title: formData.title,
-      description: formData.description,
-      odds: Number.parseFloat(formData.odds),
-      evValue: Number.parseFloat(formData.evValue),
-      coverPercentage: Number.parseInt(formData.coverPercentage),
-      units: Number.parseFloat(formData.units),
-      status: "Active",
-      createdDate: new Date().toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }),
-      endingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      }),
-    }
-
-    setEvPicks((prev) => [newPick, ...prev])
-    setIsSubmitting(false)
-    setIsCreateDialogOpen(false)
-    resetForm()
-  }
-
-  const handleEdit = (pick: EvPick) => {
-    setEditingPick(pick)
-    setFormData({
-      title: pick.title,
-      description: pick.description,
-      odds: pick.odds.toString(),
-      evValue: pick.evValue.toString(),
-      coverPercentage: pick.coverPercentage.toString(),
-      units: pick.units.toString(),
-    })
-    setIsEditDialogOpen(true)
-  }
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!editingPick) return
-
-    setIsSubmitting(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const updatedPick: EvPick = {
-      ...editingPick,
-      title: formData.title,
-      description: formData.description,
-      odds: Number.parseFloat(formData.odds),
-      evValue: Number.parseFloat(formData.evValue),
-      coverPercentage: Number.parseInt(formData.coverPercentage),
-      units: Number.parseFloat(formData.units),
-    }
-
-    setEvPicks((prev) => prev.map((pick) => (pick.id === editingPick.id ? updatedPick : pick)))
-    setIsSubmitting(false)
-    setIsEditDialogOpen(false)
-    setEditingPick(null)
-    resetForm()
-  }
-
-  const handleDelete = (pickId: string) => {
-    setEvPicks((prev) => prev.filter((pick) => pick.id !== pickId))
-  }
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Active":
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Active</Badge>
-      case "Won":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Won</Badge>
-      case "Lost":
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Lost</Badge>
-      case "Expired":
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Expired</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
-  }
-
-  const getInitials = (text: string) => {
-    return text
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
+const EvPickForm: React.FC<EvPickFormProps> = ({
+  formData,
+  onInputChange,
+  onSubmit,
+  isEdit = false,
+  isLoading = false,
+}) => {
   const isFormValid =
     formData.title &&
     formData.description &&
     formData.odds &&
     formData.evValue &&
-    formData.coverPercentage &&
-    formData.units
+    formData.confidence &&
+    formData.coverPercentage
 
-  const EvPickForm = ({ onSubmit, isEdit = false }: { onSubmit: (e: React.FormEvent) => void; isEdit?: boolean }) => (
+  return (
     <form onSubmit={onSubmit} className="space-y-6">
       {/* Title Section */}
       <div className="space-y-3">
@@ -241,7 +90,7 @@ export function EvPicksAdmin() {
           id="title"
           placeholder="e.g., Over 2.5 Goals - Liverpool vs Chelsea"
           value={formData.title}
-          onChange={(e) => handleInputChange("title", e.target.value)}
+          onChange={(e) => onInputChange("title", e.target.value)}
           className="text-lg p-4 border-2 focus:border-emerald-500 transition-colors"
         />
         <p className="text-sm text-slate-500">Enter a clear, descriptive title for the betting pick</p>
@@ -261,13 +110,39 @@ export function EvPicksAdmin() {
           id="description"
           placeholder="Provide detailed analysis including team form, head-to-head records, key player availability, weather conditions, and any other relevant factors that support this EV pick..."
           value={formData.description}
-          onChange={(e) => handleInputChange("description", e.target.value)}
+          onChange={(e) => onInputChange("description", e.target.value)}
           className="min-h-32 text-base p-4 border-2 focus:border-emerald-500 transition-colors resize-none"
         />
         <p className="text-sm text-slate-500">Include comprehensive analysis to justify the expected value</p>
       </div>
 
       <Separator />
+
+      {/* Status Section - Only show in edit mode */}
+      {isEdit && (
+        <>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-indigo-600" />
+              <Label htmlFor="status" className="text-lg font-semibold text-slate-900">
+                Status
+              </Label>
+            </div>
+            <Select value={formData.status} onValueChange={(value) => onInputChange("status", value)}>
+              <SelectTrigger className="text-lg p-4 border-2 focus:border-indigo-500 transition-colors">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-slate-500">Change the status of this EV pick</p>
+          </div>
+          <Separator />
+        </>
+      )}
 
       {/* Betting Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -282,13 +157,13 @@ export function EvPicksAdmin() {
           <Input
             id="odds"
             type="number"
-            step="0.01"
-            placeholder="1.85"
+            step="1"
+            placeholder="-110"
             value={formData.odds}
-            onChange={(e) => handleInputChange("odds", e.target.value)}
+            onChange={(e) => onInputChange("odds", e.target.value)}
             className="text-lg p-4 border-2 focus:border-amber-500 transition-colors"
           />
-          <p className="text-xs text-slate-500">Decimal odds format</p>
+          <p className="text-xs text-slate-500">American odds format (e.g., -110, +150)</p>
         </div>
 
         {/* EV Value */}
@@ -303,33 +178,30 @@ export function EvPicksAdmin() {
             id="evValue"
             type="number"
             step="0.01"
-            placeholder="0.12"
+            placeholder="12.5"
             value={formData.evValue}
-            onChange={(e) => handleInputChange("evValue", e.target.value)}
+            onChange={(e) => onInputChange("evValue", e.target.value)}
             className="text-lg p-4 border-2 focus:border-emerald-500 transition-colors"
           />
           <p className="text-xs text-slate-500">Expected value calculation</p>
         </div>
 
-        {/* Units */}
+        {/* Confidence */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-purple-600" />
-            <Label htmlFor="units" className="font-semibold text-slate-900">
-              Units
+            <Target className="h-5 w-5 text-purple-600" />
+            <Label htmlFor="confidence" className="font-semibold text-slate-900">
+              Confidence
             </Label>
           </div>
           <Input
-            id="units"
-            type="number"
-            min="0"
-            step="0.1"
-            placeholder="1.5"
-            value={formData.units}
-            onChange={(e) => handleInputChange("units", e.target.value)}
+            id="confidence"
+            placeholder="85%"
+            value={formData.confidence}
+            onChange={(e) => onInputChange("confidence", e.target.value)}
             className="text-lg p-4 border-2 focus:border-purple-500 transition-colors"
           />
-          <p className="text-xs text-slate-500">Stake size in units (1-5% of bankroll)</p>
+          <p className="text-xs text-slate-500">Confidence level (e.g., 85%)</p>
         </div>
 
         {/* Cover Percentage */}
@@ -345,9 +217,9 @@ export function EvPicksAdmin() {
             type="number"
             min="0"
             max="100"
-            placeholder="65"
+            placeholder="68"
             value={formData.coverPercentage}
-            onChange={(e) => handleInputChange("coverPercentage", e.target.value)}
+            onChange={(e) => onInputChange("coverPercentage", e.target.value)}
             className="text-lg p-4 border-2 focus:border-blue-500 transition-colors"
           />
           <p className="text-xs text-slate-500">Probability of success (%)</p>
@@ -387,6 +259,14 @@ export function EvPicksAdmin() {
                   {formData.coverPercentage}%
                 </Badge>
               </div>
+              {isEdit && (
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500">Status:</span>
+                  <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
+                    {formData.status}
+                  </Badge>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -394,12 +274,12 @@ export function EvPicksAdmin() {
 
       <Button
         type="submit"
-        disabled={!isFormValid || isSubmitting}
+        disabled={!isFormValid || isLoading}
         className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-8 py-3 text-lg font-semibold shadow-lg transition-all duration-200"
       >
-        {isSubmitting ? (
+        {isLoading ? (
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <Loader2 className="w-4 h-4 animate-spin" />
             {isEdit ? "Updating..." : "Creating..."}
           </div>
         ) : (
@@ -411,6 +291,177 @@ export function EvPicksAdmin() {
       </Button>
     </form>
   )
+}
+
+export function EvPicksAdmin() {
+  const { data: evPicks, isLoading, error } = useEvPicks()
+  const createEvPickMutation = useCreateEvPick()
+  const updateEvPickMutation = useUpdateEvPick()
+  const deleteEvPickMutation = useDeleteEvPick()
+
+  // Store state
+  const {
+    currentPage,
+    searchTerm,
+    statusFilter,
+    setCurrentPage,
+    setSearchTerm,
+    setStatusFilter,
+    getPaginatedPicks,
+    getTotalPages,
+  } = useEvPicksStore()
+
+  // Local state
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingPick, setEditingPick] = useState<EvPick | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+const [pickToDelete, setPickToDelete] = useState<EvPick | null>(null)
+  const [formData, setFormData] = useState<FormData>({
+    title: "",
+    description: "",
+    odds: "",
+    evValue: "",
+    confidence: "",
+    coverPercentage: "",
+    status: "draft",
+  })
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      description: "",
+      odds: "",
+      evValue: "",
+      confidence: "",
+      coverPercentage: "",
+      status: "draft",
+    })
+  }
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const createData: CreateEvPickData = {
+      title: formData.title,
+      description: formData.description,
+      odds: Number.parseFloat(formData.odds),
+      evValue: Number.parseFloat(formData.evValue),
+      confidence: formData.confidence,
+      coverPercentage: Number.parseInt(formData.coverPercentage),
+    }
+
+    try {
+      await createEvPickMutation.mutateAsync(createData)
+      setIsCreateDialogOpen(false)
+      resetForm()
+    } catch (error) {
+      // Error is handled in the mutation
+    }
+  }
+
+  const handleEdit = (pick: EvPick) => {
+    setEditingPick(pick)
+    setFormData({
+      title: pick.title,
+      description: pick.description,
+      odds: pick.odds.toString(),
+      evValue: pick.evValue.toString(),
+      confidence: pick.confidence || "",
+      coverPercentage: pick.coverPercentage.toString(),
+      status: pick.status,
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingPick) return
+
+    const updateData = {
+      title: formData.title,
+      description: formData.description,
+      odds: Number.parseFloat(formData.odds),
+      evValue: Number.parseFloat(formData.evValue),
+      confidence: formData.confidence,
+      coverPercentage: Number.parseInt(formData.coverPercentage),
+      status: formData.status,
+    }
+
+    try {
+      await updateEvPickMutation.mutateAsync({
+        id: editingPick._id,
+        data: updateData,
+      })
+      setIsEditDialogOpen(false)
+      setEditingPick(null)
+      resetForm()
+    } catch (error) {
+      // Error is handled in the mutation
+    }
+  }
+
+  const handleDelete = async (pickId: string) => {
+    if (window.confirm("Are you sure you want to delete this EV pick?")) {
+      try {
+        await deleteEvPickMutation.mutateAsync(pickId)
+      } catch (error) {
+        // Error is handled in the mutation
+      }
+    }
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Active</Badge>
+      case "won":
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Won</Badge>
+      case "lost":
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Lost</Badge>
+      case "expired":
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Expired</Badge>
+      case "draft":
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Draft</Badge>
+      default:
+        return <Badge variant="outline">{status}</Badge>
+    }
+  }
+
+  const getInitials = (text: string | undefined | null) => {
+    if (!text) return ""
+    return text
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  }
+
+  const paginatedPicks = getPaginatedPicks()
+  const totalPages = getTotalPages()
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-2">Error loading EV picks</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -437,110 +488,149 @@ export function EvPicksAdmin() {
         </div>
       </div>
 
-      {/* Action Bar */}
+      {/* Filters and Search */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-2">
-          <User className="h-5 w-5 text-gray-500" />
-          <span className="text-sm text-gray-600">EV Picks</span>
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search picks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="won">Won</SelectItem>
+              <SelectItem value="lost">Lost</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Calendar
-          </Button>
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filter
-          </Button>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-red-500 to-red-600 hover:bg-black text-white flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Create EV Pick
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Create New EV Pick
-                </DialogTitle>
-                <DialogDescription>
-                  Add a new Expected Value pick with detailed analysis and projections
-                </DialogDescription>
-              </DialogHeader>
-              <EvPickForm onSubmit={handleSubmit} />
-            </DialogContent>
-          </Dialog>
-        </div>
+
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-red-500 to-red-600 hover:bg-black text-white flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Create EV Pick
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Create New EV Pick
+              </DialogTitle>
+              <DialogDescription>
+                Add a new Expected Value pick with detailed analysis and projections
+              </DialogDescription>
+            </DialogHeader>
+            <EvPickForm
+              formData={formData}
+              onInputChange={handleInputChange}
+              onSubmit={handleSubmit}
+              isLoading={createEvPickMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* EV Picks Table */}
       <Card className="bg-white shadow-sm border border-gray-200">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b border-gray-200">
-                <TableHead className="font-semibold text-gray-700 py-4">PICK DETAILS</TableHead>
-                <TableHead className="font-semibold text-gray-700">EV VALUE</TableHead>
-                <TableHead className="font-semibold text-gray-700">COVER %</TableHead>
-                <TableHead className="font-semibold text-gray-700">ENDING DATE</TableHead>
-                <TableHead className="font-semibold text-gray-700">STATUS</TableHead>
-                <TableHead className="w-12"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {evPicks.map((pick) => (
-                <TableRow key={pick.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <TableCell className="py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-sm font-medium text-emerald-700">
-                        {getInitials(pick.title)}
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">{pick.title}</div>
-                        <div className="text-sm text-gray-500">
-                          Odds: {pick.odds} • Units: {pick.units}
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-gray-200">
+                    <TableHead className="font-semibold text-gray-700 py-4">PICK DETAILS</TableHead>
+                    <TableHead className="font-semibold text-gray-700">EV VALUE</TableHead>
+                    <TableHead className="font-semibold text-gray-700">COVER %</TableHead>
+                    <TableHead className="font-semibold text-gray-700">CONFIDENCE</TableHead>
+                    <TableHead className="font-semibold text-gray-700">DATE</TableHead>
+                    <TableHead className="font-semibold text-gray-700">STATUS</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                 {paginatedPicks.map((pick, index) => (
+  <TableRow key={pick._id || index} className="border-b border-gray-100 hover:bg-gray-50">
+                      <TableCell className="py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-sm font-medium text-emerald-700">
+                            {getInitials(pick.title)}
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900">{pick.title}</div>
+                            <div className="text-sm text-gray-500">Odds: {pick.odds}</div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">+{pick.evValue}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-medium text-gray-900">{pick.coverPercentage}%</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-gray-700">{pick.endingDate}</span>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(pick.status)}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(pick)} className="flex items-center gap-2">
-                          <Edit className="h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(pick.id)}
-                          className="flex items-center gap-2 text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">+{pick.evValue}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium text-gray-900">{pick.coverPercentage}%</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-gray-700">{pick.confidence}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-gray-700">{formatDate(pick.date)}</span>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(pick.status)}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(pick)} className="flex items-center gap-2">
+                              <Edit className="h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                             onClick={() => {
+                                setPickToDelete(pick)
+                                setIsDeleteDialogOpen(true)
+                              }}
+                              className="flex items-center gap-2 text-red-600"
+                              disabled={deleteEvPickMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="p-4 border-t">
+                  <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -554,7 +644,58 @@ export function EvPicksAdmin() {
             </DialogTitle>
             <DialogDescription>Update the EV pick details and analysis</DialogDescription>
           </DialogHeader>
-          <EvPickForm onSubmit={handleUpdate} isEdit={true} />
+          <EvPickForm
+            formData={formData}
+            onInputChange={handleInputChange}
+            onSubmit={handleUpdate}
+            isEdit={true}
+            isLoading={updateEvPickMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+
+  {/* delete Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete{" "}
+              <span className="font-semibold text-gray-900">{pickToDelete?.title}</span>?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end gap-4 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteEvPickMutation.isPending}
+              onClick={async () => {
+                if (!pickToDelete) return
+                try {
+                  await deleteEvPickMutation.mutateAsync(pickToDelete._id)
+                  setIsDeleteDialogOpen(false)
+                  setPickToDelete(null)
+                } catch (err) {
+                  // handled by mutation onError
+                }
+              }}
+            >
+              {deleteEvPickMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
+              Delete
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

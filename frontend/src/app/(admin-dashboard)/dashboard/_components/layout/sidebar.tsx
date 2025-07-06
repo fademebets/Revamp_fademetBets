@@ -37,9 +37,9 @@ const navLinks = [
   {
     group: "Other menu",
     links: [
-      { title: "Total Sales", href: "/total-sales", icon: BadgeDollarSign },
+      { title: "Total Sales", href: "/all-sales", icon: BadgeDollarSign },
       { title: "All Users", href: "/all-user", icon: Users2 },
-      { title: "Blogs", href: "/blog", icon: PaperclipIcon },
+      { title: "Blogs", href: "/admin-blog", icon: PaperclipIcon },
     ],
   },
   {
@@ -99,12 +99,7 @@ export function Sidebar({
             </div>
           ))}
         </div>
-        <div className="absolute bottom-4 left-0 right-0 px-6">
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-sm font-medium">Dark mode</span>
-            <Switch />
-          </div>
-        </div>
+
       </aside>
 
       {/* Mobile Sidebar */}
@@ -156,12 +151,7 @@ export function Sidebar({
               </div>
             ))}
           </div>
-          <div className="absolute bottom-4 left-0 right-0 px-6">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-sm font-medium text-gray-900">Dark mode</span>
-              <Switch />
-            </div>
-          </div>
+
         </SheetContent>
       </Sheet>
     </>
