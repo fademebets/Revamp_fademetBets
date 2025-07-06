@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { Loader2, CheckCircle, AlertCircle, RefreshCw } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
@@ -17,21 +17,36 @@ export default function SubscriptionSuccess() {
   const [isLoading, setIsLoading] = useState(true)
   const [subscriptionResult, setSubscriptionResult] = useState<SubscriptionResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    const sessionId = searchParams.get("session_id")
+    const sessionIdFromUrl = searchParams.get("session_id")
+    console.log("Session ID from URL:", sessionIdFromUrl) // Debug log
 
-    if (sessionId) {
-      confirmSubscription(sessionId)
+    if (sessionIdFromUrl) {
+      setSessionId(sessionIdFromUrl)
+      confirmSubscription(sessionIdFromUrl)
     } else {
-      setError("No session ID found")
+      setError("No session ID found in URL")
       setIsLoading(false)
     }
   }, [searchParams])
 
-  const confirmSubscription = async (sessionId: string) => {
+  const confirmSubscription = async (sessionId: string, isRetry = false) => {
+    if (!isRetry) {
+      setIsLoading(true)
+      setError(null)
+    }
+
     try {
+      console.log("Making API call with session ID:", sessionId) // Debug log
+
+      // Add timeout to the fetch request
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
       const response = await fetch("https://revamp-fademetbets.onrender.com/api/subscription/confirm-subscription", {
         method: "POST",
         headers: {
@@ -40,24 +55,63 @@ export default function SubscriptionSuccess() {
         body: JSON.stringify({
           sessionId,
         }),
+        signal: controller.signal,
       })
 
+      clearTimeout(timeoutId)
+
+      console.log("API Response status:", response.status) // Debug log
+
       if (!response.ok) {
-        throw new Error("Failed to confirm subscription")
+        const errorText = await response.text()
+        console.error("API Error:", errorText) // Debug log
+        throw new Error(`Failed to confirm subscription: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()
+      console.log("API Response:", result) // Debug log
+
       setSubscriptionResult(result)
 
       // Store the JWT token
       if (result.token) {
         localStorage.setItem("authToken", result.token)
+        console.log("Token stored successfully") // Debug log
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to confirm subscription")
+      console.error("Subscription confirmation error:", err) // Debug log
+
+      if (err instanceof Error) {
+        if (err.name === "AbortError") {
+          setError("Request timed out. Please try again.")
+        } else {
+          setError(err.message)
+        }
+      } else {
+        setError("Failed to confirm subscription. Please try again.")
+      }
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleRetry = () => {
+    if (sessionId) {
+      setRetryCount((prev) => prev + 1)
+      confirmSubscription(sessionId, true)
+    }
+  }
+
+  const handleGoHome = () => {
+    window.location.href = "/"
+  }
+
+  const handleGoToDashboard = () => {
+    window.location.href = "/dashboard"
+  }
+
+  const handleSubscribeAgain = () => {
+    window.location.href = "/subscription"
   }
 
   if (isLoading) {
@@ -71,7 +125,9 @@ export default function SubscriptionSuccess() {
             <div className="space-y-2">
               <h2 className="text-2xl sm:text-3xl font-bold">Confirming Your Subscription</h2>
               <p className="text-slate-600">Please wait while we process your payment...</p>
+              {retryCount > 0 && <p className="text-sm text-slate-500">Retry attempt: {retryCount}</p>}
             </div>
+            {sessionId && <div className="text-xs text-slate-400 break-all">Session ID: {sessionId}</div>}
           </div>
         </div>
       </section>
@@ -87,15 +143,26 @@ export default function SubscriptionSuccess() {
               <AlertCircle className="w-8 h-8 text-red-600" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl sm:text-3xl font-bold">Payment Error</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold">Payment Confirmation Error</h2>
               <p className="text-slate-600">{error}</p>
+              {sessionId && <div className="text-xs text-slate-400 break-all mt-4">Session ID: {sessionId}</div>}
             </div>
-            <Button
-              onClick={() => (window.location.href = "/subscription")}
-              className="w-full bg-red-600 hover:bg-red-700 text-white"
-            >
-              Try Again
-            </Button>
+            <div className="space-y-3">
+              <Button
+                onClick={handleRetry}
+                className="w-full bg-red-600 hover:bg-red-700 text-white"
+                disabled={!sessionId}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Try Again
+              </Button>
+              <Button onClick={handleSubscribeAgain} variant="outline" className="w-full bg-transparent">
+                Back to Subscription
+              </Button>
+              <Button onClick={handleGoHome} variant="ghost" className="w-full">
+                Go Home
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -132,17 +199,10 @@ export default function SubscriptionSuccess() {
             </Card>
           )}
           <div className="space-y-3">
-            <Button
-              onClick={() => (window.location.href = "/dashboard")}
-              className="w-full bg-red-600 hover:bg-red-700 text-white"
-            >
+            <Button onClick={handleGoToDashboard} className="w-full bg-red-600 hover:bg-red-700 text-white">
               Go to Dashboard
             </Button>
-            <Button
-              onClick={() => (window.location.href = "/subscription")}
-              variant="outline"
-              className="w-full bg-transparent"
-            >
+            <Button onClick={handleSubscribeAgain} variant="outline" className="w-full bg-transparent">
               Subscribe to Another Plan
             </Button>
           </div>
