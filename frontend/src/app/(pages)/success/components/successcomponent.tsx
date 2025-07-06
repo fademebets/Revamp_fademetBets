@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import { setCookie } from "cookies-next"
 import { Loader2, CheckCircle, AlertCircle, RefreshCw } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,6 +12,7 @@ interface SubscriptionResponse {
   subscriptionStatus: string
   subscriptionEndDate: string
   token: string
+  role: string
 }
 
 export default function SubscriptionSuccess() {
@@ -24,7 +26,6 @@ export default function SubscriptionSuccess() {
   useEffect(() => {
     const sessionIdFromUrl = searchParams.get("session_id")
     console.log("Session ID from URL:", sessionIdFromUrl) // Debug log
-
     if (sessionIdFromUrl) {
       setSessionId(sessionIdFromUrl)
       confirmSubscription(sessionIdFromUrl)
@@ -42,7 +43,6 @@ export default function SubscriptionSuccess() {
 
     try {
       console.log("Making API call with session ID:", sessionId) // Debug log
-
       // Add timeout to the fetch request
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
@@ -59,7 +59,6 @@ export default function SubscriptionSuccess() {
       })
 
       clearTimeout(timeoutId)
-
       console.log("API Response status:", response.status) // Debug log
 
       if (!response.ok) {
@@ -70,17 +69,40 @@ export default function SubscriptionSuccess() {
 
       const result = await response.json()
       console.log("API Response:", result) // Debug log
-
       setSubscriptionResult(result)
 
-      // Store the JWT token
+      // Store the JWT token, role, and subscription status in cookies
       if (result.token) {
-        localStorage.setItem("authToken", result.token)
-        console.log("Token stored successfully") // Debug log
+        setCookie("auth-token", result.token, {
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+          httpOnly: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+        })
+        console.log("Token stored successfully in cookies") // Debug log
+      }
+
+      if (result.role) {
+        setCookie("user-role", result.role, {
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+          httpOnly: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+        })
+        console.log("Role stored successfully in cookies") // Debug log
+      }
+
+      if (result.subscriptionStatus) {
+        setCookie("subscription-status", result.subscriptionStatus, {
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+          httpOnly: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+        })
+        console.log("Subscription status stored successfully in cookies") // Debug log
       }
     } catch (err) {
       console.error("Subscription confirmation error:", err) // Debug log
-
       if (err instanceof Error) {
         if (err.name === "AbortError") {
           setError("Request timed out. Please try again.")
@@ -195,6 +217,12 @@ export default function SubscriptionSuccess() {
                     {new Date(subscriptionResult.subscriptionEndDate).toLocaleDateString()}
                   </span>
                 </div>
+                {subscriptionResult.role && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">Role:</span>
+                    <span className="font-semibold capitalize">{subscriptionResult.role}</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
