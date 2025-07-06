@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -155,29 +155,30 @@ export default function SubscriptionPlan() {
     }
   }, [])
 
-  const handleStripeReturn = async (sessionId: string) => {
-    setIsLoading(true)
-    setStep("processing")
+  const handleStripeReturn = useCallback(async (sessionId: string) => {
+  setIsLoading(true)
+  setStep("processing")
 
-    try {
-      const subscriptionResponse = await confirmSubscription(sessionId)
-      setSubscriptionResult(subscriptionResponse)
-      setStep("success")
+  try {
+    const subscriptionResponse = await confirmSubscription(sessionId)
+    setSubscriptionResult(subscriptionResponse)
+    setStep("success")
 
-      // Store the JWT token
-      if (subscriptionResponse.token) {
-        localStorage.setItem("authToken", subscriptionResponse.token)
-      }
-
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to confirm subscription")
-      setStep("select")
-    } finally {
-      setIsLoading(false)
+    // Store the JWT token
+    if (subscriptionResponse.token) {
+      localStorage.setItem("authToken", subscriptionResponse.token)
     }
+
+    // Clean up URL
+    window.history.replaceState({}, document.title, window.location.pathname)
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Failed to confirm subscription")
+    setStep("select")
+  } finally {
+    setIsLoading(false)
   }
+}, [])
+
 
   const handlePlanSelect = (planType: PlanType) => {
     setSelectedPlan(planType)
@@ -186,7 +187,7 @@ export default function SubscriptionPlan() {
   }
 
   const createCheckoutSession = async (email: string, plan: PlanType) => {
-    const response = await fetch("http://localhost:5000/api/subscription/create-checkout-session", {
+    const response = await fetch("https://revamp-fademetbets.onrender.com/api/subscription/create-checkout-session", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -205,7 +206,7 @@ export default function SubscriptionPlan() {
   }
 
   const confirmSubscription = async (sessionId: string) => {
-    const response = await fetch("http://localhost:5000/api/subscription/confirm-subscription", {
+    const response = await fetch("https://revamp-fademetbets.onrender.com/api/subscription/confirm-subscription", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
