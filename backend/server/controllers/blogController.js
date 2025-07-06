@@ -113,3 +113,31 @@ exports.deleteBlog = async (req, res) => {
     });
   }
 };
+
+
+exports.getBlogBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    const blog = await Blog.findOne({ slug });
+
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: 'Blog not found.'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: blog
+    });
+  } catch (err) {
+    console.error('Error fetching blog by slug:', err);
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred while fetching the blog.',
+      error: err.message
+    });
+  }
+};
