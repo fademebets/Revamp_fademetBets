@@ -57,6 +57,7 @@ exports.confirmSubscription = async (req, res) => {
       return res.status(400).json({ message: 'Session ID is required.' });
     }
 
+    // Retrieve session
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     if (!session) {
       return res.status(400).json({ message: 'Invalid session ID.' });
@@ -69,11 +70,11 @@ exports.confirmSubscription = async (req, res) => {
     const customerId = session.customer;
     const subscriptionId = session.subscription;
 
+    // Retrieve subscription
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    if (!subscription) {
-      return res.status(400).json({ message: 'Invalid subscription ID.' });
-    }
+    console.log("🔴 Stripe Subscription Status:", subscription.status);
 
+    // Retrieve invoice
     const invoice = await stripe.invoices.retrieve(subscription.latest_invoice);
     if (!invoice) {
       return res.status(400).json({ message: 'Invoice not found for this subscription.' });
@@ -84,17 +85,20 @@ exports.confirmSubscription = async (req, res) => {
       return res.status(500).json({ message: 'Could not retrieve subscription period end.' });
     }
 
+    // Find user
     const user = await User.findOne({ stripeCustomerId: customerId });
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    user.subscriptionStatus = subscription.status;
+    // Force set subscription status to 'active'
+    user.subscriptionStatus = 'active';
     user.subscriptionEndDate = new Date(periodEnd * 1000);
     await user.save();
 
     const role = 'user';
 
+    // Create JWT with active status
     const token = jwt.sign(
       {
         userId: user._id,
@@ -106,50 +110,46 @@ exports.confirmSubscription = async (req, res) => {
       { expiresIn: '30d' }
     );
 
-    // ✅ Send subscription confirmation email via Resend
+    // Send subscription confirmation email via Resend
     await resend.emails.send({
       from: 'FadeMeBets <no-reply@fademebets.com>',
       to: user.email,
       subject: 'Subscription Activated Successfully!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px;">
-  <div style="text-align: center; margin-bottom: 20px;">
-    <img src="https://www.fademebets.com/logo.png" alt="FadeMeBets" style="max-width: 160px;" />
-  </div>
+          <div style="text-align: center; margin-bottom: 20px;">
+            <img src="https://www.fademebets.com/logo.png" alt="FadeMeBets" style="max-width: 160px;" />
+          </div>
 
-  <h2 style="color: #222;">Hi ${user.name || 'there'},</h2>
+          <h2 style="color: #c8102e;">Hi ${user.firstName || 'there'},</h2>
 
-  <p style="font-size: 16px; line-height: 1.6; margin-top: 10px;">
-    Your subscription has been <strong style="color: #4CAF50;">successfully activated 🎉</strong>
-  </p>
+          <p style="font-size: 16px; line-height: 1.6; margin-top: 10px;">
+            Your subscription has been <strong style="color: #c8102e;">successfully activated 🎉</strong>
+          </p>
 
-  <p style="font-size: 16px; line-height: 1.6;">
-    <strong>Plan:</strong> ${subscription.items.data[0].price.nickname}
-  </p>
+          <p style="font-size: 16px; line-height: 1.6;">
+            <strong>Subscription valid until:</strong> ${new Date(periodEnd * 1000).toLocaleDateString()}
+          </p>
 
-  <p style="font-size: 16px; line-height: 1.6;">
-    <strong>Subscription valid until:</strong> ${new Date(periodEnd * 1000).toLocaleDateString()}
-  </p>
+          <br/>
 
-  <br/>
+          <p style="font-size: 16px; line-height: 1.6;">
+            Thank you for choosing <strong style="color: #c8102e;">FadeMeBets 🚀</strong>
+          </p>
 
-  <p style="font-size: 16px; line-height: 1.6;">
-    Thank you for choosing <strong>FadeMeBets 🚀</strong>
-  </p>
-
-  <div style="margin-top: 30px; text-align: center;">
-    <a href="https://www.fademebets.com/userProfile" style="background-color: #4CAF50; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-size: 16px;">
-      Visit Dashboard
-    </a>
-  </div>
-</div>
-
+          <div style="margin-top: 30px; text-align: center;">
+            <a href="https://www.fademebets.com/userProfile" style="background-color: #c8102e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-size: 16px;">
+              Visit Dashboard
+            </a>
+          </div>
+        </div>
       `
     });
 
+    // Respond success
     res.json({
       message: 'Subscription activated successfully.',
-      subscriptionStatus: subscription.status,
+      subscriptionStatus: 'active',
       subscriptionEndDate: user.subscriptionEndDate,
       token,
       role
@@ -157,11 +157,11 @@ exports.confirmSubscription = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Confirm subscription error:', {
-    message: error.message,
-    stack: error.stack,
-    response: error.response?.data || null
-  });
-  res.status(500).json({ message: 'Internal Server Error' });
+      message: error.message,
+      stack: error.stack,
+      response: error.response?.data || null
+    });
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
