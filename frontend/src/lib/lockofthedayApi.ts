@@ -1,7 +1,7 @@
 import { getCookie } from "cookies-next"
 import type { Lock, CreateLockRequest, UpdateLockRequest, ApiResponse, PaginatedResponse } from "@/types/lock"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://revamp-fademetbets.onrender.com/api"
 
 const getAuthToken = () => {
   return getCookie("auth-token")

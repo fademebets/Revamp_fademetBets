@@ -1,6 +1,6 @@
 import { getCookie } from "cookies-next"
 
-const API_BASE_URL = "http://localhost:5000/api"
+const API_BASE_URL = "https://revamp-fademetbets.onrender.com/api"
 
 interface ChangePasswordRequest {
   oldPassword: string

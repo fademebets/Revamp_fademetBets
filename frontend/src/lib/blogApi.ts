@@ -1,7 +1,7 @@
 import { getCookie } from "cookies-next"
 import type { Blog, BlogsResponse, CreateBlogData, UpdateBlogData } from "@/types/blog"
 
-const API_BASE_URL = "http://localhost:5000/api"
+const API_BASE_URL = "https://revamp-fademetbets.onrender.com/api"
 
 const getAuthToken = () => {
   return getCookie("auth-token")

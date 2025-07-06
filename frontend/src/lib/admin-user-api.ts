@@ -33,22 +33,22 @@ export const userApi = {
       limit: limit.toString(),
     })
 
-    return apiRequest(`http://localhost:5000/api/admin-users?${params.toString()}`)
+    return apiRequest(`https://revamp-fademetbets.onrender.com/api/admin-users?${params.toString()}`)
   },
 
   searchUserByEmail: async (email: string): Promise<User> => {
-    return apiRequest(`http://localhost:5000/api/admin-users/email/${encodeURIComponent(email)}`)
+    return apiRequest(`https://revamp-fademetbets.onrender.com/api/admin-users/email/${encodeURIComponent(email)}`)
   },
 
   updateUser: async (userId: string, data: UpdateUserData) => {
-    return apiRequest(`http://localhost:5000/api/admin-users/${userId}`, {
+    return apiRequest(`https://revamp-fademetbets.onrender.com/api/admin-users/${userId}`, {
       method: "PUT",
       body: JSON.stringify(data),
     })
   },
 
   deleteUser: async (userId: string) => {
-    return apiRequest(`http://localhost:5000/api/admin-users/${userId}`, {
+    return apiRequest(`https://revamp-fademetbets.onrender.com/api/admin-users/${userId}`, {
       method: "DELETE",
     })
   },
