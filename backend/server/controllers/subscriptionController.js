@@ -57,6 +57,10 @@ exports.confirmSubscription = async (req, res) => {
     }
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (!session) {
+      return res.status(400).json({ message: 'Invalid session ID.' });
+    }
+
     if (session.payment_status !== 'paid') {
       return res.status(400).json({ message: 'Payment not completed.' });
     }
@@ -65,21 +69,34 @@ exports.confirmSubscription = async (req, res) => {
     const subscriptionId = session.subscription;
 
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    if (!subscription) {
+      return res.status(400).json({ message: 'Invalid subscription ID.' });
+    }
 
+    // ✅ Now safely fetch the latest invoice to get period end
+    const invoice = await stripe.invoices.retrieve(subscription.latest_invoice);
+    if (!invoice) {
+      return res.status(400).json({ message: 'Invoice not found for this subscription.' });
+    }
+
+    const periodEnd = invoice.lines.data[0].period.end; // get the first item's period end
+    if (!periodEnd) {
+      return res.status(500).json({ message: 'Could not retrieve subscription period end.' });
+    }
+
+    // Find user
     const user = await User.findOne({ stripeCustomerId: customerId });
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    // Activate subscription in DB
+    // Update user subscription info
     user.subscriptionStatus = subscription.status;
-    user.subscriptionEndDate = new Date(subscription.current_period_end * 1000);
+    user.subscriptionEndDate = new Date(periodEnd * 1000);
     await user.save();
 
-    // Static role: 'user'
     const role = 'user';
 
-    // Create JWT Token including static role
     const token = jwt.sign(
       {
         userId: user._id,
