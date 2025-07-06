@@ -36,7 +36,7 @@ exports.createCheckoutSession = async (req, res) => {
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `https://www.fademebets.com/success.html?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `https://revamp-fademetbets.vercel.app/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: 'https://www.fademebets.com/subscribe.html',
     });
 

@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 // Define route permissions
 const ROUTE_PERMISSIONS = {
-  PUBLIC: ["/", "/blogs", "/blog", "/login", "/parley-calc", "/ev-calc"],
+  PUBLIC: ["/", "/blogs", "/blog", "/login", "/parley-calc", "/ev-calc", "/success"],
 
   USER: ["/userProfile", "/user-picks", "/user-lock-of-the-day"],
 
