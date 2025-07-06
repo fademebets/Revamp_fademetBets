@@ -1,12 +1,54 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Check, Star, Zap, Crown, TrendingUp, Bell, Users, BarChart3, Shield, Headphones } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Check,
+  Star,
+  Zap,
+  Crown,
+  TrendingUp,
+  Bell,
+  Users,
+  BarChart3,
+  Shield,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  CreditCard,
+} from "lucide-react"
+
+type PlanType = "monthly" | "quarterly" | "yearly"
+
+interface SubscriptionResponse {
+  message: string
+  subscriptionStatus: string
+  subscriptionEndDate: string
+  token: string
+}
+
+// Declare Stripe global type
+declare global {
+  interface Window {
+    Stripe: any
+  }
+}
 
 export default function SubscriptionPlan() {
-  const [, setHoveredPlan] = useState<number | null>(null)
+  const [hoveredPlan, setHoveredPlan] = useState<number | null>(null)
+  const [email, setEmail] = useState("")
+  const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [subscriptionResult, setSubscriptionResult] = useState<SubscriptionResponse | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [step, setStep] = useState<"select" | "email" | "processing" | "success">("select")
+  const [stripe, setStripe] = useState<any>(null)
 
   const plans = [
     {
@@ -14,6 +56,7 @@ export default function SubscriptionPlan() {
       name: "Starter",
       price: "$2.99",
       period: "/month",
+      planType: "monthly" as PlanType,
       description: "Perfect for beginners getting started",
       features: [
         "5 daily +EV picks",
@@ -34,6 +77,7 @@ export default function SubscriptionPlan() {
       badge: "Most Popular",
       price: "$7.99",
       period: "/quarter",
+      planType: "quarterly" as PlanType,
       description: "Best balance of features and value",
       features: [
         "15 daily +EV picks",
@@ -56,6 +100,7 @@ export default function SubscriptionPlan() {
       badge: "Best Value",
       price: "$29.99",
       period: "/year",
+      planType: "yearly" as PlanType,
       description: "Maximum value for serious bettors",
       features: [
         "Unlimited daily +EV picks",
@@ -83,6 +128,298 @@ export default function SubscriptionPlan() {
     { icon: <Shield className="w-4 h-4" />, text: "Risk management" },
   ]
 
+  // Load Stripe on component mount
+  useEffect(() => {
+    const loadStripe = async () => {
+      if (window.Stripe) {
+        setStripe(window.Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY))
+      } else {
+        const script = document.createElement("script")
+        script.src = "https://js.stripe.com/v3/"
+        script.onload = () => {
+          setStripe(window.Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY))
+        }
+        document.head.appendChild(script)
+      }
+    }
+
+    loadStripe()
+
+    // Check for successful payment return from Stripe
+    const urlParams = new URLSearchParams(window.location.search)
+    const sessionId = urlParams.get("session_id")
+    const success = urlParams.get("success")
+
+    if (success === "true" && sessionId) {
+      handleStripeReturn(sessionId)
+    }
+  }, [])
+
+  const handleStripeReturn = async (sessionId: string) => {
+    setIsLoading(true)
+    setStep("processing")
+
+    try {
+      const subscriptionResponse = await confirmSubscription(sessionId)
+      setSubscriptionResult(subscriptionResponse)
+      setStep("success")
+
+      // Store the JWT token
+      if (subscriptionResponse.token) {
+        localStorage.setItem("authToken", subscriptionResponse.token)
+      }
+
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to confirm subscription")
+      setStep("select")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handlePlanSelect = (planType: PlanType) => {
+    setSelectedPlan(planType)
+    setStep("email")
+    setError(null)
+  }
+
+  const createCheckoutSession = async (email: string, plan: PlanType) => {
+    const response = await fetch("http://localhost:5000/api/subscription/create-checkout-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        plan,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to create checkout session")
+    }
+
+    return response.json()
+  }
+
+  const confirmSubscription = async (sessionId: string) => {
+    const response = await fetch("http://localhost:5000/api/subscription/confirm-subscription", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sessionId,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to confirm subscription")
+    }
+
+    return response.json()
+  }
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!email || !selectedPlan) {
+      setError("Please provide email and select a plan")
+      return
+    }
+
+    if (!stripe) {
+      setError("Payment system is loading. Please try again.")
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // Create checkout session
+      const checkoutResponse = await createCheckoutSession(email, selectedPlan)
+      const { sessionId } = checkoutResponse
+
+      // Redirect to Stripe Checkout
+      const { error: stripeError } = await stripe.redirectToCheckout({
+        sessionId: sessionId,
+      })
+
+      if (stripeError) {
+        throw new Error(stripeError.message)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred during checkout")
+      setIsLoading(false)
+    }
+  }
+
+  const resetFlow = () => {
+    setStep("select")
+    setSelectedPlan(null)
+    setEmail("")
+    setError(null)
+    setSubscriptionResult(null)
+  }
+
+  if (step === "success" && subscriptionResult) {
+    return (
+      <section className="relative bg-white text-slate-900 py-8 sm:py-12 lg:py-16 xl:py-24 overflow-hidden">
+        <div className="relative w-full max-w-2xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className="text-center space-y-6">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-green-600" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">Payment Successful!</h2>
+              <p className="text-slate-600">{subscriptionResult.message}</p>
+            </div>
+            <Card className="text-left">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Status:</span>
+                  <span className="font-semibold text-green-600 capitalize">
+                    {subscriptionResult.subscriptionStatus}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Valid Until:</span>
+                  <span className="font-semibold">
+                    {new Date(subscriptionResult.subscriptionEndDate).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Plan:</span>
+                  <span className="font-semibold capitalize">{selectedPlan}</span>
+                </div>
+              </CardContent>
+            </Card>
+            <div className="space-y-3">
+              <Button
+                onClick={() => (window.location.href = "/dashboard")}
+                className="w-full bg-red-600 hover:bg-red-700 text-white"
+              >
+                Go to Dashboard
+              </Button>
+              <Button onClick={resetFlow} variant="outline" className="w-full bg-transparent">
+                Subscribe to Another Plan
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (step === "email") {
+    const selectedPlanDetails = plans.find((p) => p.planType === selectedPlan)
+
+    return (
+      <section className="relative bg-white text-slate-900 py-8 sm:py-12 lg:py-16 xl:py-24 overflow-hidden">
+        <div className="relative w-full max-w-md mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className="text-center mb-8 space-y-4">
+            <h2 className="text-2xl sm:text-3xl font-bold">Complete Your Subscription</h2>
+            {selectedPlanDetails && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  {selectedPlanDetails.icon}
+                  <span className="font-semibold">{selectedPlanDetails.name}</span>
+                </div>
+                <div className="text-2xl font-bold text-red-600">
+                  {selectedPlanDetails.price}
+                  <span className="text-sm text-slate-600">{selectedPlanDetails.period}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <Alert className="mb-6 border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={handleSubscribe} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Button
+                type="submit"
+                className="w-full bg-red-600 hover:bg-red-700 text-white"
+                disabled={isLoading || !email || !stripe}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Redirecting to Payment...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Continue to Payment
+                  </>
+                )}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={resetFlow}
+                className="w-full bg-transparent"
+                disabled={isLoading}
+              >
+                Back to Plans
+              </Button>
+            </div>
+
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
+                <Shield className="w-3 h-3" />
+                <span>Secured by Stripe</span>
+              </div>
+              <p className="text-xs text-slate-500">
+                By continuing, you agree to our Terms of Service and Privacy Policy. You can cancel anytime.
+              </p>
+            </div>
+          </form>
+        </div>
+      </section>
+    )
+  }
+
+  if (step === "processing") {
+    return (
+      <section className="relative bg-white text-slate-900 py-8 sm:py-12 lg:py-16 xl:py-24 overflow-hidden">
+        <div className="relative w-full max-w-md mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className="text-center space-y-6">
+            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl sm:text-3xl font-bold">Processing Your Payment</h2>
+              <p className="text-slate-600">Please wait while we confirm your subscription...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="relative bg-white text-slate-900 py-8 sm:py-12 lg:py-16 xl:py-24 overflow-hidden">
       {/* Background decorations */}
@@ -96,13 +433,11 @@ export default function SubscriptionPlan() {
             <Zap className="w-4 h-4" />
             Choose Your Edge
           </div>
-
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight px-2">
             <span className="bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
               Simple, Transparent Pricing
             </span>
           </h2>
-
           <p className="text-sm sm:text-base lg:text-lg text-slate-600 max-w-xl mx-auto px-4">
             Join thousands of profitable bettors with our proven strategies. Choose your plan and start winning.
           </p>
@@ -120,12 +455,11 @@ export default function SubscriptionPlan() {
 
         {/* Pricing Cards */}
         <div className="w-full">
-          {/* Mobile: Single column, Tablet: 2 columns, Desktop: 3 columns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6 max-w-none">
             {plans.map((plan) => (
               <div key={plan.id} className="w-full min-w-0">
                 <Card
-                  className={`relative group transition-all duration-300 hover:scale-[1.02] w-full h-full ${
+                  className={`relative group transition-all duration-300 hover:scale-[1.02] w-full h-full cursor-pointer ${
                     plan.popular
                       ? "bg-red-600 text-white border-red-500 shadow-xl"
                       : "bg-white text-slate-900 border-slate-200 shadow-md"
@@ -147,10 +481,8 @@ export default function SubscriptionPlan() {
                     >
                       {plan.icon}
                     </div>
-
                     <h3 className="text-xl sm:text-2xl font-bold">{plan.name}</h3>
                     <p className="text-xs sm:text-sm leading-relaxed px-2">{plan.description}</p>
-
                     <div className="space-y-1">
                       <div>
                         <span className="text-2xl sm:text-3xl font-bold">{plan.price}</span>
@@ -172,6 +504,7 @@ export default function SubscriptionPlan() {
                     </div>
 
                     <Button
+                      onClick={() => handlePlanSelect(plan.planType)}
                       className={`w-full text-sm sm:text-base font-semibold py-2 sm:py-3 ${
                         plan.popular
                           ? "bg-white text-red-600 hover:bg-red-50"
@@ -212,11 +545,10 @@ export default function SubscriptionPlan() {
               <span className="whitespace-nowrap">Instant access</span>
             </div>
             <div className="flex items-center justify-center gap-1">
-              <Headphones className="w-4 h-4 text-red-500 flex-shrink-0" />
-              <span className="whitespace-nowrap">24/7 support</span>
+              <CreditCard className="w-4 h-4 text-red-500 flex-shrink-0" />
+              <span className="whitespace-nowrap">Secure payments</span>
             </div>
           </div>
-
           <p className="max-w-xl mx-auto leading-relaxed">
             Join over 12,000 successful bettors who trust FadeMeBets for consistent, profitable picks.
           </p>
