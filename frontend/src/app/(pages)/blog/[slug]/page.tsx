@@ -1,29 +1,13 @@
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import { blogApi } from "@/lib/blogApi"
+import type { Metadata } from "next"
+import { ArrowLeft, Calendar, Clock, User } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Calendar, User, Clock, Share2 } from "lucide-react"
-import { blogApi } from "@/lib/blogApi";
-import type { Blog } from "@/types/blog"
-import type { Metadata } from "next"
-
-interface BlogDetailPageProps {
-  params: {
-    slug: string
-  }
-}
-
-async function getBlogData(slug: string): Promise<Blog | null> {
-  try {
-    const blog = await blogApi.getBlogBySlug(slug)
-    return blog
-  } catch (error) {
-    console.error("Error fetching blog:", error)
-    return null
-  }
-}
+import { Share2 } from "lucide-react"
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -39,9 +23,22 @@ function estimateReadingTime(content: string): number {
   return Math.ceil(wordCount / wordsPerMinute)
 }
 
-// Generate metadata for SEO
-export async function generateMetadata({ params }: BlogDetailPageProps): Promise<Metadata> {
-  const blog = await getBlogData(params.slug)
+async function getBlogData(slug: string) {
+  try {
+    return await blogApi.getBlogBySlug(slug)
+  } catch (error) {
+    console.error("Error fetching blog:", error)
+    return null
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const blog = await getBlogData(slug)
 
   if (!blog) {
     return {
@@ -53,17 +50,16 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
   return {
     title: blog.metaTitle || blog.title,
     description: blog.metaDescription,
-    twitter: {
-      card: "summary_large_image",
-      title: blog.metaTitle || blog.title,
-      description: blog.metaDescription,
-      images: blog.featuredImage ? [blog.featuredImage] : [],
-    },
   }
 }
 
-export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
-  const blog = await getBlogData(params.slug)
+export default async function BlogDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const blog = await getBlogData(slug)
 
   if (!blog || !blog.isPublished) {
     notFound()
@@ -118,13 +114,11 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
                 <span>{formatDate(blog.createdAt)}</span>
               </div>
             </div>
-
             <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
               <Share2 className="h-4 w-4" />
               Share
             </Button>
           </div>
-
           <Separator className="mb-8" />
         </header>
 
