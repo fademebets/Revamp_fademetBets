@@ -17,7 +17,9 @@ const eslintConfig = [
       "@typescript-eslint/no-unused-vars": "off",
       "react/no-unescaped-entities": "off",
        "@typescript-eslint/no-empty-interface": "off",
-       "@typescript-eslint/no-empty-object-type": "off"
+       "@typescript-eslint/no-empty-object-type": "off",
+         "@next/next/no-html-link-for-pages": "off"
+
     },
   },
 ];
