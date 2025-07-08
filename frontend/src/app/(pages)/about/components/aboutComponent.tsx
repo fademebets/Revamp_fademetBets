@@ -170,39 +170,7 @@ export default function AboutComponent() {
         </div>
       </section>
 
-      {/* Team Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">Meet Our Expert Team</h2>
-              <p className="text-xl text-gray-600">
-                Industry veterans with decades of combined experience in analytics, sports, and finance.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              {team.map((member, index) => (
-                <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-                  <CardContent className="p-8 text-center">
-                    <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-gray-200 overflow-hidden">
-                      <img
-                        src={member.image || "/placeholder.svg"}
-                        alt={member.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">{member.name}</h3>
-                    <p className="text-red-600 font-semibold mb-4">{member.role}</p>
-                    <p className="text-gray-600 text-sm leading-relaxed">{member.experience}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
+     
       {/* Community Section */}
       <section className="py-20 bg-red-600 text-white">
         <div className="container mx-auto px-4">
