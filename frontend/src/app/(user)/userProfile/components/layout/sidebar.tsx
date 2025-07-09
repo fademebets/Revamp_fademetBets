@@ -120,9 +120,11 @@ export function Sidebar({ sidebarOpen, mobileOpen, setMobileOpen }: SidebarProps
 
           {/* Mobile Header */}
           <div className="flex h-16 items-center gap-3 border-b bg-gradient-to-r from-red-50 to-red-100 px-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-red-500 to-red-600 shadow-md">
-              <Image src="/logo.png" alt="FadeMeBets" width={24} height={24} className="rounded" />
-            </div>
+           <Link href="/" className="cursor-pointer">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-red-500 to-red-600 shadow-md">
+                <Image src="/logo.png" alt="FadeMeBets" width={24} height={24} className="rounded" />
+              </div>
+            </Link>
             <div className="flex flex-col flex-1">
               <span className="text-lg font-bold text-gray-900">FadeMeBets</span>
               <span className="text-xs text-red-600 font-medium">Premium Picks</span>

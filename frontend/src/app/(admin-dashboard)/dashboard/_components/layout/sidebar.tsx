@@ -66,16 +66,17 @@ export function Sidebar({
           sidebarOpen ? "w-64" : "w-0 -translate-x-full opacity-0"
         }`}
       >
-        <div className="flex h-16 items-center gap-2 border-b px-6">
-          <Image
-            src="/logo.png"
-            alt="Logo"
-            width={40}
-            height={40}
-            className="rounded-full"
-          />
-          <span className="text-black text-lg font-semibold">FadeMeBets</span>
-        </div>
+<Link href="/" className="flex h-16 items-center gap-2 border-b px-6 cursor-pointer">
+  <Image
+    src="/logo.png"
+    alt="Logo"
+    width={40}
+    height={40}
+    className="rounded-full"
+  />
+  <span className="text-black text-lg font-semibold">FadeMeBets</span>
+</Link>
+
         <div className="py-4">
           {navLinks.map((section) => (
             <div key={section.group} className="px-3 py-2">
