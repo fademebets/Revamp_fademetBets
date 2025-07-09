@@ -5,10 +5,10 @@ import Link from "next/link"
 
 export default function AboutComponent() {
   const stats = [
-    { number: "85%", label: "Win Rate", description: "Average success rate across all picks" },
+    { number: "63%", label: "Win Rate", description: "Average success rate across all picks" },
     { number: "10K+", label: "Active Members", description: "Sharp bettors in our community" },
     { number: "500+", label: "Daily Analysis", description: "Games analyzed every day" },
-    { number: "2M+", label: "Profit Generated", description: "Total member profits this year" }
+    { number: "450K", label: "Profit Generated", description: "Total member profits this year" }
   ]
 
   const values = [
@@ -170,7 +170,7 @@ export default function AboutComponent() {
         </div>
       </section>
 
-     
+
       {/* Community Section */}
       <section className="py-20 bg-red-600 text-white">
         <div className="container mx-auto px-4">

@@ -1,46 +1,44 @@
 import { Button } from "@/components/ui/button"
-import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, ExternalLink } from "lucide-react"
+import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, ExternalLink, Youtube } from "lucide-react"
 
 export default function Footer() {
-  const navigationLinks = [
-    { name: "About Us", href: "/about" },
-    { name: "How It Works", href: "/how-it-works" },
-    { name: "Pricing", href: "/pricing" },
-    { name: "Success Stories", href: "/testimonials" },
-  ]
+ const navigationLinks = [
+  { name: "About Us", href: "/about" },
+  { name: "Services", href: "/services" },
+  { name: "Parley Calculator", href: "/parley-calc" },
+  { name: "EV Calculator", href: "/ev-calc" },
+  { name: "Blogs", href: "/blog" },
+]
 
   const legalLinks = [
     { name: "Terms of Service", href: "/terms" },
     { name: "Privacy Policy", href: "/privacy" },
-    { name: "Responsible Gambling", href: "/responsible-gambling" },
-    { name: "Cookie Policy", href: "/cookies" },
   ]
 
   const supportLinks = [
-    { name: "Contact Support", href: "/contact" },
-    { name: "FAQ", href: "/faq" },
-    { name: "Getting Started", href: "/getting-started" },
-    { name: "API Documentation", href: "/api-docs" },
+    { name: "Contact Support", href: "/about" },
+    { name: "FAQ", href: "/about" },
   ]
 
   const socialLinks = [
-    {
-      name: "Twitter",
-      icon: <Twitter className="w-5 h-5" />,
-      href: "https://twitter.com/fademebets",
-      hoverColor: "hover:bg-blue-500",
-    },
+
     {
       name: "Instagram",
       icon: <Instagram className="w-5 h-5" />,
-      href: "https://instagram.com/fademebets",
-      hoverColor: "hover:bg-pink-500",
+      href: "https://www.instagram.com/fademebets/",
+      hoverColor: "hover:bg-red-600",
+    },
+       {
+      name: "Twitter",
+      icon: <Twitter className="w-5 h-5" />,
+      href: "https://x.com/FadeMeBets",
+      hoverColor: "hover:bg-red-600",
     },
     {
-      name: "Facebook",
-      icon: <Facebook className="w-5 h-5" />,
-      href: "https://facebook.com/fademebets",
-      hoverColor: "hover:bg-blue-600",
+      name: "Youtube",
+      icon: <Youtube className="w-5 h-5" />,
+      href: "https://www.youtube.com/@fademebets",
+      hoverColor: "hover:bg-red-600",
     },
   ]
 
@@ -66,17 +64,20 @@ export default function Footer() {
 
         {/* Contact Info */}
         <div className="space-y-3">
-          <div className="flex items-center gap-3 text-red-100 text-sm">
+         <div className="flex items-center gap-3 text-red-100 text-sm">
             <Mail className="w-4 h-4 flex-shrink-0" />
-            <span>support@fademebets.com</span>
+            <a
+              href="mailto:team@fademebets.com"
+              className="hover:underline"
+            >
+              team@fademebets.com
+            </a>
           </div>
-          <div className="flex items-center gap-3 text-red-100 text-sm">
-            <Phone className="w-4 h-4 flex-shrink-0" />
-            <span>+1 (555) 123-BETS</span>
-          </div>
+
+
           <div className="flex items-center gap-3 text-red-100 text-sm">
             <MapPin className="w-4 h-4 flex-shrink-0" />
-            <span>Las Vegas, NV</span>
+            <span>United States</span>
           </div>
         </div>
 
@@ -153,38 +154,33 @@ export default function Footer() {
       </div>
     </div>
 
-    {/* Newsletter Signup */}
-    <div className="mt-10 pt-8 border-t border-red-500/30 space-y-5">
-      <div className="max-w-xl mx-auto text-center lg:text-left space-y-4">
-        <h4 className="font-semibold text-white text-lg">Stay Updated</h4>
-        <p className="text-red-100 text-sm">Get the latest picks and betting insights delivered to your inbox.</p>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="email"
-            placeholder="Enter your email"
-            className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40"
-          />
-          <Button className="bg-white text-red-600 hover:bg-red-50 font-semibold px-6">Subscribe</Button>
-        </div>
-      </div>
-    </div>
+
   </div>
 
   {/* Bottom Bar */}
   <div className="border-t border-red-500/30 bg-red-800/50 rounded-b-3xl mt-10">
     <div className="container mx-auto px-4 py-6 space-y-4">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="text-red-100 text-sm text-center md:text-left">© 2024 FadeMeBets. All rights reserved.</div>
+        <div className="text-red-100 text-sm text-center md:text-left">© 2025 FadeMeBets. All rights reserved.</div>
         <div className="flex flex-wrap justify-center md:justify-end items-center gap-4 text-red-100 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
             <span>Live Support Available</span>
           </div>
           <div className="hidden md:block w-px h-4 bg-red-500/30"></div>
-          <div className="flex items-center gap-1">
-            <span>Powered by Advanced Analytics</span>
-            <ExternalLink className="w-3 h-3" />
-          </div>
+         <div className="flex items-center gap-1 text-sm text-red-100">
+          <span>Built by</span>
+          <a
+            href="https://buildwithstella.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold hover:underline"
+          >
+            Stella Agency
+          </a>
+          <ExternalLink className="w-3 h-3" />
+        </div>
+
         </div>
       </div>
 

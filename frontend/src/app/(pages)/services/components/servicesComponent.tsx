@@ -125,11 +125,7 @@ export default function ServicesComponent() {
       answer:
         "We include detailed analysis with every pick, bankroll management guidance, and educational content to help you become a better bettor.",
     },
-    {
-      question: "What's your refund policy?",
-      answer:
-        "We offer a 7-day money-back guarantee for new members. If you're not satisfied with our service, we'll provide a full refund within the first week.",
-    },
+   
   ]
 
   return (

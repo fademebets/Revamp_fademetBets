@@ -255,17 +255,18 @@ export default function TermsAndConditionsComponent() {
                 </p>
                 <div className="bg-gradient-to-r from-blue-50 to-slate-50 p-8 rounded-xl border border-slate-200">
                   <h4 className="font-bold text-slate-900 text-lg mb-4">FadeMeBets Legal Department</h4>
-                  <div className="space-y-2 text-slate-700">
+                 <div className="space-y-2 text-slate-700">
                     <p>
-                      <span className="font-medium">Email:</span> legal@fademebets.com
-                    </p>
-                    <p>
-                      <span className="font-medium">Address:</span> [Your Business Address]
-                    </p>
-                    <p>
-                      <span className="font-medium">Phone:</span> [Your Phone Number]
+                      <span className="font-medium">Email:</span>{" "}
+                      <a
+                        href="mailto:team@fademebets.com"
+                        className="text-primary hover:underline"
+                      >
+                        team@fademebets.com
+                      </a>
                     </p>
                   </div>
+
                 </div>
               </div>
             </section>

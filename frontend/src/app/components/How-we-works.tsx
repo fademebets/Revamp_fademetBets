@@ -1,11 +1,25 @@
-import { useMemo } from "react"
+"use client"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { TrendingUp, Target, BarChart3, Users, ArrowRight, Star } from "lucide-react"
+import {
+  TrendingUp,
+  Target,
+  BarChart3,
+  Users,
+  ArrowRight,
+  Star,
+} from "lucide-react"
+import { Link as ScrollLink } from "react-scroll"
 
 export default function HowWeWorks() {
-  const chartHeights = useMemo(() => {
-    return Array.from({ length: 15 }, () => Math.floor(Math.random() * 60 + 30))
+  const [chartHeights, setChartHeights] = useState<number[]>([])
+
+  useEffect(() => {
+    const heights = Array.from({ length: 15 }, () =>
+      Math.floor(Math.random() * 60 + 30)
+    )
+    setChartHeights(heights)
   }, [])
 
   return (
@@ -24,7 +38,9 @@ export default function HowWeWorks() {
                   <Star key={i} className="w-4 h-4 fill-current" />
                 ))}
               </div>
-              <span className="text-sm font-medium text-red-600">Trusted by 10,000+ bettors</span>
+              <span className="text-sm font-medium text-red-600">
+                Trusted by 10,000+ bettors
+              </span>
             </div>
 
             <div className="space-y-4">
@@ -34,16 +50,31 @@ export default function HowWeWorks() {
                   Your Edge in Sports Betting
                 </span>
               </h1>
-              <p className="text-xl md:text-2xl text-gray-700 font-medium">Get daily +EV picks</p>
+              <p className="text-xl md:text-2xl text-gray-700 font-medium">
+                Get daily +EV picks
+              </p>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
               {[
-                { icon: <Target className="w-5 h-5 text-red-500" />, label: "Bet with confidence", bg: "bg-red-100" },
-                { icon: <BarChart3 className="w-5 h-5 text-red-700" />, label: "Track profits over time", bg: "bg-red-200" },
+                {
+                  icon: <Target className="w-5 h-5 text-red-500" />,
+                  label: "Bet with confidence",
+                  bg: "bg-red-100",
+                },
+                {
+                  icon: <BarChart3 className="w-5 h-5 text-red-700" />,
+                  label: "Track profits over time",
+                  bg: "bg-red-200",
+                },
               ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className={`w-10 h-10 ${item.bg} rounded-lg flex items-center justify-center`}>
+                <div
+                  key={i}
+                  className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200"
+                >
+                  <div
+                    className={`w-10 h-10 ${item.bg} rounded-lg flex items-center justify-center`}
+                  >
                     {item.icon}
                   </div>
                   <span className="font-semibold">{item.label}</span>
@@ -52,15 +83,35 @@ export default function HowWeWorks() {
             </div>
 
             <p className="text-lg text-gray-600 leading-relaxed">
-              At FadeMeBets, we deliver carefully curated, data-backed betting signals designed to help you beat the odds and grow your bankroll. Join a community of sharp bettors turning insights into income — one winning pick at a time.
+              At FadeMeBets, we deliver carefully curated, data-backed betting
+              signals designed to help you beat the odds and grow your bankroll.
+              Join a community of sharp bettors turning insights into income —
+              one winning pick at a time.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg font-semibold">
-                Start Winning Today
-                <ArrowRight className="w-5 h-5 ml-2" />
+              <Button
+                size="lg"
+                asChild
+                className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg font-semibold"
+              >
+                <ScrollLink
+                  to="subscription"
+                  smooth={true}
+                  duration={500}
+                  offset={-50}
+                  className="flex items-center cursor-pointer"
+                >
+                  Start Winning Today
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </ScrollLink>
               </Button>
-              <Button variant="outline" size="lg" className="border-red-300 text-red-700 hover:bg-red-50 px-8 py-3 text-lg">
+
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-red-300 text-red-700 hover:bg-red-50 px-8 py-3 text-lg"
+              >
                 View Track Record
               </Button>
             </div>
@@ -108,8 +159,12 @@ export default function HowWeWorks() {
             <Card className="bg-gray-50 border border-gray-200">
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">Today&rsquo;s Featured Pick</h3>
-                  <span className="px-2 py-1 bg-red-100 text-red-600 text-xs font-medium rounded">+EV</span>
+                  <h3 className="font-semibold text-gray-900">
+                    Today&rsquo;s Featured Pick
+                  </h3>
+                  <span className="px-2 py-1 bg-red-100 text-red-600 text-xs font-medium rounded">
+                    +EV
+                  </span>
                 </div>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-white rounded-lg">
@@ -119,7 +174,9 @@ export default function HowWeWorks() {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-red-600">-110</p>
-                      <p className="text-xs text-gray-500">Expected Value: +12.3%</p>
+                      <p className="text-xs text-gray-500">
+                        Expected Value: +12.3%
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -132,7 +189,9 @@ export default function HowWeWorks() {
 
             <Card className="bg-gray-50 border border-gray-200">
               <CardContent className="p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">30-Day Performance</h3>
+                <h3 className="font-semibold text-gray-900 mb-4">
+                  30-Day Performance
+                </h3>
                 <div className="flex items-end justify-between h-24 gap-2">
                   {chartHeights.map((height, i) => (
                     <div
@@ -142,7 +201,9 @@ export default function HowWeWorks() {
                     />
                   ))}
                 </div>
-                <p className="text-sm text-gray-500 mt-2">Consistent profits across all major sports</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Consistent profits across all major sports
+                </p>
               </CardContent>
             </Card>
           </div>

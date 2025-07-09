@@ -61,28 +61,28 @@ export default async function BlogDetailPage({
   const { slug } = await params
   const blog = await getBlogData(slug)
 
+
   if (!blog || !blog.isPublished) {
     notFound()
   }
 
   const readingTime = estimateReadingTime(blog.content)
 
+
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/blog">
-            <Button variant="ghost" className="flex items-center gap-2 hover:bg-gray-100">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Blog
-            </Button>
-          </Link>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-white mt-10">
 
       {/* Hero Section */}
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 text-left">
+        <Link href="/blog">
+          <Button variant="ghost" className="flex items-center gap-2 hover:bg-gray-100">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Blog
+          </Button>
+        </Link>
+      </div>
         {/* Article Header */}
         <header className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -114,10 +114,7 @@ export default async function BlogDetailPage({
                 <span>{formatDate(blog.createdAt)}</span>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
-              <Share2 className="h-4 w-4" />
-              Share
-            </Button>
+          
           </div>
           <Separator className="mb-8" />
         </header>
@@ -170,10 +167,7 @@ export default async function BlogDetailPage({
                 {blog.updatedAt !== blog.createdAt && <span></span>}
               </p>
             </div>
-            <Button variant="outline" className="flex items-center gap-2 bg-transparent">
-              <Share2 className="h-4 w-4" />
-              Share Article
-            </Button>
+
           </div>
         </footer>
 

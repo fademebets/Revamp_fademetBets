@@ -17,67 +17,68 @@ export default function Testimonial() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0)
 
   const testimonials = [
-    {
-      id: 1,
-      name: "Marcus Rodriguez",
-      role: "Professional Bettor",
-      location: "Las Vegas, NV",
-      memberSince: "Jan 2023",
-      roi: "+34.2%",
-      testimonial:
-        "FadeMeBets completely transformed my approach to sports betting. Their data-driven picks and bankroll management strategies helped me turn a $2,000 starting bankroll into over $6,800 in just 8 months. The community support is incredible.",
-      verified: true,
-      avatar: "MR",
-    },
-    {
-      id: 2,
-      name: "Sarah Chen",
-      role: "Finance Professional",
-      location: "New York, NY",
-      memberSince: "Mar 2023",
-      roi: "+28.7%",
-      testimonial:
-        "As someone with a finance background, I appreciate the statistical rigor behind every pick. The transparency in tracking ROI and the consistent +EV opportunities have made this my most profitable investment strategy.",
-      verified: true,
-      avatar: "SC",
-    },
-    {
-      id: 3,
-      name: "David Thompson",
-      role: "Small Business Owner",
-      location: "Chicago, IL",
-      memberSince: "Nov 2022",
-      roi: "+41.5%",
-      testimonial:
-        "I was skeptical at first, but the results speak for themselves. The instant notifications saved me from missing several high-value bets, and the community insights have taught me more about sports betting than years of going solo.",
-      verified: true,
-      avatar: "DT",
-    },
-    {
-      id: 4,
-      name: "Jennifer Walsh",
-      role: "Data Analyst",
-      location: "Austin, TX",
-      memberSince: "Feb 2023",
-      roi: "+31.9%",
-      testimonial:
-        "The analytical approach here is exactly what I was looking for. No gut feelings or hunches - just pure data and proven strategies. My bankroll has grown consistently every month since joining.",
-      verified: true,
-      avatar: "JW",
-    },
-    {
-      id: 5,
-      name: "Michael Foster",
-      role: "Software Engineer",
-      location: "Seattle, WA",
-      memberSince: "Dec 2022",
-      roi: "+37.3%",
-      testimonial:
-        "The combination of expert picks and educational content has been game-changing. I've learned to think like a sharp bettor, and my results have improved dramatically. Best investment I've made this year.",
-      verified: true,
-      avatar: "MF",
-    },
-  ]
+  {
+    id: 1,
+    name: "Marcus Rodriguez",
+    role: "Professional Bettor",
+    location: "Las Vegas, NV",
+    memberSince: "June 2025",
+    roi: "+34.2%",
+    testimonial:
+      "FadeMeBets completely transformed my approach to sports betting. Their data-driven picks and bankroll management strategies helped me turn a $2,000 starting bankroll into over $6,800 in just 8 months. The community support is incredible.",
+    verified: true,
+    avatar: "MR",
+  },
+  {
+    id: 2,
+    name: "Sarah Chen",
+    role: "Finance Professional",
+    location: "New York, NY",
+    memberSince: "July 2025",
+    roi: "+28.7%",
+    testimonial:
+      "As someone with a finance background, I appreciate the statistical rigor behind every pick. The transparency in tracking ROI and the consistent +EV opportunities have made this my most profitable investment strategy.",
+    verified: true,
+    avatar: "SC",
+  },
+  {
+    id: 3,
+    name: "David Thompson",
+    role: "Small Business Owner",
+    location: "Chicago, IL",
+    memberSince: "June 2025",
+    roi: "+41.5%",
+    testimonial:
+      "I was skeptical at first, but the results speak for themselves. The instant notifications saved me from missing several high-value bets, and the community insights have taught me more about sports betting than years of going solo.",
+    verified: true,
+    avatar: "DT",
+  },
+  {
+    id: 4,
+    name: "Jennifer Walsh",
+    role: "Data Analyst",
+    location: "Austin, TX",
+    memberSince: "July 2025",
+    roi: "+31.9%",
+    testimonial:
+      "The analytical approach here is exactly what I was looking for. No gut feelings or hunches - just pure data and proven strategies. My bankroll has grown consistently every month since joining.",
+    verified: true,
+    avatar: "JW",
+  },
+  {
+    id: 5,
+    name: "Michael Foster",
+    role: "Software Engineer",
+    location: "Seattle, WA",
+    memberSince: "June 2025",
+    roi: "+37.3%",
+    testimonial:
+      "The combination of expert picks and educational content has been game-changing. I've learned to think like a sharp bettor, and my results have improved dramatically. Best investment I've made this year.",
+    verified: true,
+    avatar: "MF",
+  },
+];
+
 
   const kpis = [
     {
@@ -89,7 +90,7 @@ export default function Testimonial() {
     },
     {
       label: "Weekly Wins",
-      value: "78%",
+      value: "63%",
       description: "Win rate this month",
       icon: <Target className="w-5 h-5" />,
       color: "text-red-500",
@@ -103,7 +104,7 @@ export default function Testimonial() {
     },
     {
       label: "Total Profit Generated",
-      value: "$2.4M+",
+      value: "$450K+",
       description: "For our members",
       icon: <TrendingUp className="w-5 h-5" />,
       color: "text-red-500",

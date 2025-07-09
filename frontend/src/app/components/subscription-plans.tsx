@@ -55,17 +55,17 @@ export default function SubscriptionPlan() {
     {
       id: 1,
       name: "Starter",
-      price: "$2.99",
+      price: "$7.99",
       period: "/month",
       planType: "monthly" as PlanType,
       description: "Perfect for beginners getting started",
       features: [
-        "5 daily +EV picks",
+        "3 daily +EV picks",
         "Basic analytics dashboard",
-        "Email notifications",
+        "Lock of the day",
         "Community access",
         "Mobile app access",
-        "Basic bankroll tracking",
+        "Unit management",
       ],
       cta: "Get Starter",
       popular: false,
@@ -76,19 +76,22 @@ export default function SubscriptionPlan() {
       id: 2,
       name: "Premium",
       badge: "Most Popular",
-      price: "$7.99",
-      period: "/quarter",
-      planType: "quarterly" as PlanType,
+      price: "$59.99",
+      period: "/year",
+      planType: "yearly" as PlanType,
       description: "Best balance of features and value",
       features: [
-        "15 daily +EV picks",
-        "Advanced analytics & insights",
+         "3 daily +EV picks",
+        "Basic analytics dashboard",
+        "Lock of the Day",
+        "Community Access",
+        "Mobile app access",
+        "Unit management",
         "Instant push notifications",
-        "Priority community access",
-        "Live chat support",
+        "VIP chat feature",
+        "priority customer support",
         "Advanced bankroll management",
-        "Weekly strategy sessions",
-        "Historical performance data",
+
       ],
       cta: "Get Premium",
       popular: true,
@@ -99,21 +102,21 @@ export default function SubscriptionPlan() {
       id: 3,
       name: "Pro",
       badge: "Best Value",
-      price: "$29.99",
-      period: "/year",
-      planType: "yearly" as PlanType,
+      price: "$19.99",
+      period: "/quarter",
+      planType: "quarterly" as PlanType,
       description: "Maximum value for serious bettors",
       features: [
-        "Unlimited daily +EV picks",
-        "Premium analytics suite",
-        "Real-time notifications",
-        "VIP community access",
-        "1-on-1 strategy consultations",
-        "Professional bankroll tools",
-        "Weekly live sessions",
-        "Custom betting strategies",
-        "Priority customer support",
-        "Exclusive market insights",
+         "3 daily +EV picks",
+        "Basic Analytics Dashboard",
+        "Lock of the Day",
+        "Community Access",
+        "Mobile App Access",
+        "Unit management",
+        "Instant Push Notifications",
+        "Priority Community Access",
+        "Live Chat Support"
+
       ],
       cta: "Go Pro",
       popular: false,
@@ -502,7 +505,7 @@ export default function SubscriptionPlan() {
   }
 
   return (
-    <section className="relative bg-white text-slate-900 py-8 sm:py-12 lg:py-16 xl:py-24 overflow-hidden">
+    <section  id="subscription" className="relative bg-white text-slate-900 py-8 sm:py-12 lg:py-16 xl:py-24 overflow-hidden">
       {/* Background decorations */}
       <div className="absolute top-1/4 left-1/4 w-40 h-40 sm:w-60 sm:h-60 lg:w-80 lg:h-80 bg-red-500/5 rounded-full blur-3xl"></div>
       <div className="absolute bottom-1/4 right-1/4 w-40 h-40 sm:w-60 sm:h-60 lg:w-80 lg:h-80 bg-red-500/5 rounded-full blur-3xl"></div>
@@ -595,14 +598,7 @@ export default function SubscriptionPlan() {
                       {plan.cta}
                     </Button>
 
-                    <p
-                      className={`text-center text-xs flex justify-center items-center gap-1 mt-2 ${
-                        plan.popular ? "text-white/90" : "text-slate-500"
-                      }`}
-                    >
-                      <Shield className="w-3 h-3 flex-shrink-0" />
-                      <span className="whitespace-nowrap">30-day money-back guarantee</span>
-                    </p>
+
                   </CardContent>
                 </Card>
               </div>

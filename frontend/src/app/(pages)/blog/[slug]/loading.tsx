@@ -4,19 +4,19 @@ import { ArrowLeft } from "lucide-react"
 
 export default function BlogDetailLoading() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white mt-10">
       {/* Navigation */}
-      <nav className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+
+
+      {/* Content Loading */}
+      <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Button variant="ghost" className="flex items-center gap-2" disabled>
             <ArrowLeft className="h-4 w-4" />
             Back to Blog
           </Button>
         </div>
-      </nav>
-
-      {/* Content Loading */}
-      <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Skeleton */}
         <header className="mb-8">
           <div className="flex items-center gap-2 mb-4">

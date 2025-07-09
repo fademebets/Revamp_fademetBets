@@ -6,6 +6,7 @@ import Testimonial from "./components/testimonials-section"
 import SubscriptionPlan from "./components/subscription-plans"
 import FooterSection from "./components/footer-section"
 import JoinCommunitySection from "./components/Community"
+import HomeBlogSection from "./components/HomeBlogSection"
 
 
 export default function HomePage() {
@@ -15,6 +16,7 @@ export default function HomePage() {
       <HeroSection />
       <HowWeWorks />
     <Benefits />
+    <HomeBlogSection />
      <Testimonial />
          <SubscriptionPlan />
       <JoinCommunitySection/>

@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Menu, Home, Info, Calculator} from "lucide-react"
+import { Menu, Home, Info, Calculator, Briefcase, X} from "lucide-react"
 import LanguageSelector from "./language-selector"
 import { Separator } from "@/components/ui/separator"
 import type { User } from "@/types/auth"
@@ -30,6 +30,8 @@ const getNavIcon = (item: string) => {
     case "parley calc":
     case "ev calc":
       return <Calculator className="h-4 w-4" />
+      case "services":
+      return <Briefcase className="h-4 w-4" />;
     default:
       return null
   }
@@ -79,9 +81,20 @@ export default function MobileMenu({
       </SheetTrigger>
 
       <SheetContent side="right" className="w-[320px] bg-white border-l border-gray-200 p-0">
-        <SheetHeader className="px-6 py-4 border-b border-gray-100">
-          <SheetTitle className="text-left text-gray-900 font-semibold">Navigation Menu</SheetTitle>
-        </SheetHeader>
+       <SheetHeader className="relative px-6 py-4 border-b border-gray-100">
+            <SheetTitle className="text-gray-900 font-semibold">Navigation Menu</SheetTitle>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-900"
+            >
+              <X className="h-5 w-5" />
+              <span className="sr-only">Close menu</span>
+            </Button>
+          </SheetHeader>
+
 
         <div className="flex flex-col h-full">
           {/* Navigation Links */}
