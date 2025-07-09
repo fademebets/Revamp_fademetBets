@@ -300,14 +300,19 @@ exports.generateReferralCode = async (req, res) => {
 
   try {
     const user = await User.findById(userId);
+
     if (!user || user.subscriptionStatus !== 'active') {
       return res.status(400).json({ message: 'Only active subscribers can generate referral codes.' });
+    }
+
+    if (user.hasReferredUser) {
+      return res.status(400).json({ message: 'You have already referred a user. Cannot generate more referral codes.' });
     }
 
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     user.referralCode = code;
-    user.referralCodeExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    user.referralCodeExpiry = Date.now() + 3 * 24 * 60 * 60 * 1000; // 3 days
     await user.save();
 
     res.json({ referralCode: code, expiry: user.referralCodeExpiry });
@@ -317,4 +322,3 @@ exports.generateReferralCode = async (req, res) => {
     res.status(500).json({ message: 'Could not generate referral code.' });
   }
 };
-

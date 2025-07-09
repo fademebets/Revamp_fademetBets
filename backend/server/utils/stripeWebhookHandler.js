@@ -15,6 +15,7 @@ const handleStripeWebhook = async (req, res) => {
   }
 
   try {
+    // Handle subscription creation / update
     if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.created') {
       const subscription = event.data.object;
       const customerId = subscription.customer;
@@ -27,9 +28,10 @@ const handleStripeWebhook = async (req, res) => {
       }
     }
 
+    // Handle payment failed
     if (event.type === 'invoice.payment_failed') {
-      const subscription = event.data.object.subscription;
-      const subs = await stripe.subscriptions.retrieve(subscription);
+      const subscriptionId = event.data.object.subscription;
+      const subs = await stripe.subscriptions.retrieve(subscriptionId);
       const customerId = subs.customer;
 
       const user = await User.findOne({ stripeCustomerId: customerId });
@@ -39,10 +41,38 @@ const handleStripeWebhook = async (req, res) => {
       }
     }
 
+    // 🟥 Handle upcoming invoices — apply referral discount if available
+    if (event.type === 'invoice.upcoming') {
+      const invoice = event.data.object;
+      const customerId = invoice.customer;
+
+      const user = await User.findOne({ stripeCustomerId: customerId });
+
+      if (user && user.nextDiscountAmount > 0) {
+        // Create one-time coupon based on nextDiscountAmount
+        const coupon = await stripe.coupons.create({
+          percent_off: user.nextDiscountAmount,
+          duration: 'once',
+        });
+
+        // Attach discount to upcoming invoice
+        await stripe.invoices.update(invoice.id, {
+          discounts: [{ coupon: coupon.id }],
+        });
+
+        // Reset user's next discount since it's now used
+        user.nextDiscountAmount = 0;
+        user.nextDiscountType = null;
+        await user.save();
+
+        console.log(`✅ Applied ${coupon.percent_off}% discount to ${user.email}'s upcoming invoice`);
+      }
+    }
+
     res.status(200).json({ received: true });
 
   } catch (error) {
-    console.error('Webhook handling error:', error);
+    console.error('❌ Webhook handling error:', error);
     res.status(500).send('Webhook handler error');
   }
 };

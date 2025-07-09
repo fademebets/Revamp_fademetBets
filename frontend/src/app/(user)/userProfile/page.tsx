@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { User, Lock, Shield, Camera, Eye, EyeOff, Smartphone, Mail, Phone, MapPin, Save, QrCode } from "lucide-react"
+import { User, Lock, Shield, Camera, Eye, EyeOff, Smartphone, Mail, Phone, MapPin, Save, QrCode, Users, Copy, Loader2, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner"
 import { useProfileStore } from "@/store/user-profile-store";
 import { profileApi } from "@/lib/user-profile-api";
+import { getCookie } from "cookies-next"
 
 export default function ProfilePage() {
   const { user, isLoading, fetchProfile, updateProfile } = useProfileStore()
@@ -44,6 +45,49 @@ export default function ProfilePage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [isUnsubscribed, setIsUnsubscribed] = useState(false)
+
+  const [referralCode, setReferralCode] = useState("")
+const [referralExpiry, setReferralExpiry] = useState<string | null>(null)
+const [referralGenerating, setReferralGenerating] = useState(false)
+
+const handleGenerateReferral = async () => {
+  try {
+    setReferralGenerating(true)
+
+    const token = getCookie("auth-token")
+    if (!token) {
+      toast.error("No authentication token found.")
+      return
+    }
+
+    const response = await fetch("http://localhost:5000/api/auth/generate-referral-code", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      // ✅ Show API error in toast, no throw
+      toast.error(data.message || "Failed to generate referral code")
+      return
+    }
+
+    setReferralCode(data.referralCode)
+    setReferralExpiry(data.expiry)
+
+    toast.success("Referral code generated successfully! Valid for 3 days.")
+
+  } catch (err) {
+    console.error(err)
+    toast.error(err instanceof Error ? err.message : "Failed to generate referral code")
+  } finally {
+    setReferralGenerating(false)
+  }
+}
 
 
   // Load profile data on component mount
@@ -353,42 +397,71 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Two-Factor Authentication */}
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-4">
-              <div className="p-2 rounded-md bg-green-50">
-                <Shield className="h-4 w-4 text-green-600" />
-              </div>
-              <div className="flex-1">
-                <CardTitle className="text-lg">Two-Factor Authentication</CardTitle>
-                <p className="text-sm text-muted-foreground">Add an extra layer of security to your account.</p>
-              </div>
-              <Switch
-                checked={twoFactorEnabled}
-                onCheckedChange={setTwoFactorEnabled}
-                className="data-[state=checked]:bg-green-600"
-              />
-            </CardHeader>
-            {twoFactorEnabled && (
-              <CardContent className="space-y-4">
-                <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-6 text-center">
-                  <QrCode className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                  <h4 className="font-medium mb-2">Scan QR Code</h4>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Use your authenticator app to scan this QR code and set up 2FA.
-                  </p>
-                  <Button variant="outline" size="sm">
-                    <Smartphone className="h-4 w-4 mr-2" />
-                    Setup Authenticator App
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="verificationCode">Verification Code</Label>
-                  <Input id="verificationCode" placeholder="Enter 6-digit code" maxLength={6} />
-                </div>
-              </CardContent>
-            )}
-          </Card>
+         <Card>
+  <CardHeader className="flex flex-row items-center gap-4">
+    <div className="p-2 rounded-md bg-red-50">
+      <Users className="h-5 w-5 text-red-600" />
+    </div>
+    <div className="flex-1">
+      <CardTitle className="text-lg">Referral Code</CardTitle>
+      <p className="text-sm text-muted-foreground">Invite a friend and both get rewards.</p>
+    </div>
+  </CardHeader>
+
+  <CardContent className="space-y-4">
+    <div className="flex items-center gap-2">
+      <Input
+        value={referralCode}
+        readOnly
+        placeholder="Your referral code will appear here"
+        className="flex-1"
+      />
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => {
+          navigator.clipboard.writeText(referralCode)
+          toast.success("Referral code copied!")
+        }}
+        disabled={!referralCode}
+      >
+        <Copy className="w-4 h-4 mr-1" />
+        Copy
+      </Button>
+    </div>
+
+    <Button
+      onClick={handleGenerateReferral}
+      className="w-full bg-red-600 hover:bg-red-700 text-white"
+      disabled={referralGenerating}
+    >
+      {referralGenerating ? (
+        <>
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          Generating...
+        </>
+      ) : (
+        <>
+          <Zap className="h-4 w-4 mr-2" />
+          Generate New Referral Code
+        </>
+      )}
+    </Button>
+
+   {referralExpiry && (
+  <p className="text-xs text-muted-foreground text-center">
+    Expires on:{" "}
+    {new Date(referralExpiry).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })}
+  </p>
+)}
+
+  </CardContent>
+</Card>
+
         </div>
 
         {/* Profile Sidebar */}
