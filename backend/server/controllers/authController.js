@@ -293,3 +293,28 @@ exports.getUserProfile = async (req, res) => {
     res.status(500).json({ message: 'An error occurred while fetching profile' });
   }
 };
+
+
+exports.generateReferralCode = async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user || user.subscriptionStatus !== 'active') {
+      return res.status(400).json({ message: 'Only active subscribers can generate referral codes.' });
+    }
+
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    user.referralCode = code;
+    user.referralCodeExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    await user.save();
+
+    res.json({ referralCode: code, expiry: user.referralCodeExpiry });
+
+  } catch (error) {
+    console.error('Error generating referral code:', error);
+    res.status(500).json({ message: 'Could not generate referral code.' });
+  }
+};
+

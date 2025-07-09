@@ -9,7 +9,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 // Create Checkout Session
 exports.createCheckoutSession = async (req, res) => {
   try {
-    const { email, plan } = req.body;
+    const { email, plan, referralCode } = req.body;
+
     if (!email || !plan) {
       return res.status(400).json({ message: 'Email and plan are required.' });
     }
@@ -19,6 +20,7 @@ exports.createCheckoutSession = async (req, res) => {
       return res.status(400).json({ message: 'Invalid subscription plan selected.' });
     }
 
+    // Find or create user
     let user = await User.findOne({ email });
     if (!user) {
       user = await User.create({ email });
@@ -32,19 +34,65 @@ exports.createCheckoutSession = async (req, res) => {
       await user.save();
     }
 
+    let couponId = null;
+
+    // 🟥 Referral Code Handling
+    if (referralCode) {
+      const referringUser = await User.findOne({
+        referralCode,
+        referralCodeExpiry: { $gt: Date.now() },
+      });
+
+      if (!referringUser) {
+        return res.status(400).json({ message: 'Invalid or expired referral code.' });
+      }
+
+      // Check if referring user has already referred someone
+      if (referringUser.hasReferredUser) {
+        return res.status(400).json({ message: 'This referral code has already been used.' });
+      }
+
+      // Create 10% one-time coupon
+      const coupon = await stripe.coupons.create({
+        percent_off: 10,
+        duration: 'once',
+      });
+      couponId = coupon.id;
+
+      // Map plan to next discount for referrer
+      const discountMap = {
+        'monthly': 50,
+        'quarterly': 25,
+        'yearly': 20,
+      };
+      const discount = discountMap[referringUser.subscriptionStatus] || 0;
+
+      // Update referring user with reward
+      referringUser.hasReferredUser = true;
+      referringUser.nextDiscountAmount = discount;
+      referringUser.nextDiscountType = referringUser.subscriptionStatus;
+      await referringUser.save();
+
+      // Mark new user as referred by this code
+      user.referredBy = referralCode;
+      await user.save();
+    }
+
+    // Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `https://revamp-fademetbets.vercel.app/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: 'https://revamp-fademetbets.vercel.app',
+      discounts: couponId ? [{ coupon: couponId }] : [],
+      success_url: `https://revamp-fademebets.vercel.app/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: 'https://revamp-fademebets.vercel.app',
     });
 
     res.json({ sessionId: session.id });
 
   } catch (error) {
-    console.error(error);
+    console.error('❌ createCheckoutSession error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };

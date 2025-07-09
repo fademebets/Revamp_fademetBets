@@ -49,6 +49,7 @@ export default function SubscriptionPlan() {
   const [step, setStep] = useState<"select" | "email" | "processing" | "success">("select")
   const [stripe, setStripe] = useState<any>(null)
   const [stripeLoading, setStripeLoading] = useState(true)
+  const [referralCode, setReferralCode] = useState<string>("")
   const [stripeError, setStripeError] = useState<string | null>(null)
 
   const plans = [
@@ -217,25 +218,27 @@ export default function SubscriptionPlan() {
     setError(null)
   }
 
-  const createCheckoutSession = async (email: string, plan: PlanType) => {
-    const response = await fetch("https://revamp-fademetbets.onrender.com/api/subscription/create-checkout-session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        plan,
-      }),
-    })
+  const createCheckoutSession = async (email: string, plan: PlanType, referralCode?: string) => {
+  const response = await fetch("https://revamp-fademetbets.onrender.com/api/subscription/create-checkout-session", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email,
+      plan,
+      ...(referralCode && { referralCode })  // 👈 only include if provided
+    }),
+  });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || "Failed to create checkout session")
-    }
-
-    return response.json()
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to create checkout session");
   }
+
+  return response.json();
+};
+
 
   const confirmSubscription = async (sessionId: string) => {
     const response = await fetch("https://revamp-fademetbets.onrender.com/api/subscription/confirm-subscription", {
@@ -285,7 +288,7 @@ export default function SubscriptionPlan() {
 
     try {
       // Create checkout session
-      const checkoutResponse = await createCheckoutSession(email, selectedPlan)
+      const checkoutResponse = await createCheckoutSession(email, selectedPlan, referralCode)
       const { sessionId } = checkoutResponse
 
       if (!sessionId) {
@@ -432,6 +435,19 @@ export default function SubscriptionPlan() {
                 disabled={isLoading}
                 className="w-full"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="referralCode">Referral Code (Optional)</Label>
+              <Input
+                id="referralCode"
+                type="text"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value)}
+                placeholder="Enter referral code if you have one"
+                disabled={isLoading}
+                className="w-full"
+            />
             </div>
 
             <div className="space-y-3">

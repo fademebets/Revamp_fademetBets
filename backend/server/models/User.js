@@ -14,7 +14,15 @@ const userSchema = new mongoose.Schema({
   subscriptionEndDate: { type: Date },
   resetCodeExpiry: { type: Date },
   lastSessionId: { type: String },
-  
+  // refferals
+  // New fields for referral system
+  referralCode: { type: String },
+  referralCodeExpiry: { type: Date },
+  hasReferredUser: { type: Boolean, default: false },
+  referredBy: { type: String }, // referral code of the person who referred them
+  nextDiscountAmount: { type: Number }, // in percentage
+  nextDiscountType: { type: String }, 
+
 }, { timestamps: true }); // ✅ timestamps stay here
 
 module.exports = mongoose.model('User', userSchema);

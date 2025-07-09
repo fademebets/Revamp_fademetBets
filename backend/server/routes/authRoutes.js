@@ -18,6 +18,7 @@ router.put('/profile', authMiddleware, authController.updateUserProfile);
 // Get user profile info
 router.get('/profile', authMiddleware, authController.getUserProfile);
 
+router.post('/generate-referral-code', authMiddleware, authController.generateReferralCode);
 
 
 
