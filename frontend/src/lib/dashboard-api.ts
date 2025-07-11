@@ -1,6 +1,6 @@
 import type { SalesApiResponse, TimeRange } from "@/types/dashboard"
 
-const API_BASE_URL = "https://revamp-fademetbets.onrender.com/api"
+const API_BASE_URL = "https://revamp-fademetbets-backend.onrender.com/api"
 
 export const dashboardApi = {
   async getSalesData(timeRange: TimeRange): Promise<SalesApiResponse> {

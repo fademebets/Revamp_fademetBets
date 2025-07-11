@@ -26,7 +26,7 @@ export default function LockOfTheDay() {
           return
         }
 
-        const response = await fetch("https://revamp-fademetbets.onrender.com/api/auth/subscription-status", {
+        const response = await fetch("https://revamp-fademetbets-backend.onrender.com/api/auth/subscription-status", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",

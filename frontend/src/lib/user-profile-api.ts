@@ -10,7 +10,7 @@ import type {
 
 } from "@/types/user-profile"
 
-const API_BASE_URL = "https://revamp-fademetbets.onrender.com"
+const API_BASE_URL = "https://revamp-fademetbets-backend.onrender.com"
 
 const getAuthHeaders = () => {
   const token = getCookie("auth-token")

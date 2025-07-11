@@ -46,7 +46,7 @@ export function ResetPasswordModal({ isOpen, onClose, email }: ResetPasswordModa
     setIsLoading(true)
 
     try {
-      const response = await fetch("https://revamp-fademetbets.onrender.com/api/auth/reset-password", {
+      const response = await fetch("https://revamp-fademetbets-backend.onrender.com/api/auth/reset-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

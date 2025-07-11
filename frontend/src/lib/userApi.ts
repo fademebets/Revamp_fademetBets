@@ -1,6 +1,6 @@
 import { LoginRequest, LoginResponse } from '@/types/auth';
 
-const API_BASE_URL = 'https://revamp-fademetbets.onrender.com/api';
+const API_BASE_URL = 'https://revamp-fademetbets-backend.onrender.com/api';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {

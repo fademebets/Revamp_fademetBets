@@ -1,7 +1,7 @@
 import { getCookie } from "cookies-next"
 import type { EvPick, CreateEvPickData, UpdateEvPickData } from "@/types/ev"
 
-const API_BASE_URL = "https://revamp-fademetbets.onrender.com/api"
+const API_BASE_URL = "https://revamp-fademetbets-backend.onrender.com/api"
 
 // Get auth token from cookies
 const getAuthToken = () => {

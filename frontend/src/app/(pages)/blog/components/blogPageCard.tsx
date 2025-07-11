@@ -66,7 +66,7 @@ async function BlogGrid() {
         <div className="text-center py-8">
           <h3 className="text-lg font-semibold text-red-600 mb-2">API Connection Failed</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Unable to connect to: https://revamp-fademetbets.onrender.com/api/blogs
+            Unable to connect 
           </p>
           <p className="text-xs text-muted-foreground">Error: {error.message}</p>
         </div>
