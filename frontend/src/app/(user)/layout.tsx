@@ -7,7 +7,7 @@ import { Sidebar } from "./userProfile/components/layout/sidebar"
 import { Header } from "./userProfile/components/layout/header"
 import { LogoutLoadingScreen } from "../login/components/logout-loading-screen"
 
-export default function DoctorLayout({
+export default function UserLayout({
   children,
 }: {
   children: React.ReactNode

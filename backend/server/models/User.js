@@ -21,7 +21,9 @@ const userSchema = new mongoose.Schema({
   hasReferredUser: { type: Boolean, default: false },
   referredBy: { type: String }, // referral code of the person who referred them
   nextDiscountAmount: { type: Number }, // in percentage
-  nextDiscountType: { type: String }, 
+  nextDiscountType: { type: String },
+  subscriptionPlan: { type: String, enum: ['monthly', 'quarterly', 'yearly'], default: null },
+
 
 }, { timestamps: true }); // ✅ timestamps stay here
 

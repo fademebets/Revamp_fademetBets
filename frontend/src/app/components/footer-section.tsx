@@ -46,7 +46,7 @@ export default function Footer() {
    <footer className="bg-gradient-to-br from-[#c8102e] to-red-700 text-white mx-4 sm:mx-6 md:mx-10 my-8 rounded-3xl">
   {/* Main Footer Content */}
   <div className="container mx-auto px-4 py-10 lg:py-16">
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
       {/* Brand Section */}
       <div className="space-y-6">
         <div className="space-y-4">
@@ -123,20 +123,6 @@ export default function Footer() {
         </nav>
       </div>
 
-      <div className="space-y-6">
-        <h4 className="font-semibold text-white text-base">Support</h4>
-        <nav className="space-y-3">
-          {supportLinks.map((link) => (
-            <a
-              key={link.name}
-              href={link.href}
-              className="block text-red-100 hover:text-white duration-200 text-sm"
-            >
-              {link.name}
-            </a>
-          ))}
-        </nav>
-      </div>
 
       <div className="space-y-6">
         <h4 className="font-semibold text-white text-base">Legal</h4>

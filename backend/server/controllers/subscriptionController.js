@@ -91,6 +91,10 @@ exports.createCheckoutSession = async (req, res) => {
       discounts: couponId ? [{ coupon: couponId }] : [],
       success_url: `https://revamp-fademebets.vercel.app/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: "https://revamp-fademebets.vercel.app",
+       metadata: {
+        plan, // this will be 'monthly' / 'quarterly' / 'yearly'
+        email
+      }
     });
 
     res.json({ sessionId: session.id });
@@ -136,15 +140,23 @@ exports.confirmSubscription = async (req, res) => {
       return res.status(500).json({ message: 'Could not retrieve subscription period end.' });
     }
 
-    // Find user
+    // Find user by stripeCustomerId
     const user = await User.findOne({ stripeCustomerId: customerId });
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    // Force set subscription status to 'active'
+    // Update user's subscription details
     user.subscriptionStatus = 'active';
+    user.subscriptionId = subscriptionId;
     user.subscriptionEndDate = new Date(periodEnd * 1000);
+
+    // ✅ Set subscriptionPlan from session metadata if available
+    const plan = session.metadata?.plan;
+    if (plan) {
+      user.subscriptionPlan = plan;
+    }
+
     await user.save();
 
     const role = 'user';
@@ -197,10 +209,11 @@ exports.confirmSubscription = async (req, res) => {
       `
     });
 
-    // Respond success
+    // Return success response
     res.json({
       message: 'Subscription activated successfully.',
       subscriptionStatus: 'active',
+      subscriptionPlan: user.subscriptionPlan,
       subscriptionEndDate: user.subscriptionEndDate,
       token,
       role

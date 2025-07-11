@@ -1,35 +1,27 @@
-import Navbar from "@/app/components/navbar"
-import Footer from "@/app/components/footer-section"
-import JoinCommunitySection from "@/app/components/Community"
-import SubscriptionPlan from "@/app/components/subscription-plans"
 import type { Metadata } from "next"
 
 const baseUrl = "https://fademebets.com"
 
-
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
-  title: "About Us - Expert Betting Signals & Data-Driven Picks",
-  description:
-    "Learn about FadeMeBets — the expert team behind data-driven betting signals and tools designed to help bettors grow their bankroll and beat the odds.",
+  title: "Login",
+  description: "Login to your FadeMeBets account to access expert betting signals, tools, and community insights.",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: `${baseUrl}/about`,
+    url: `${baseUrl}/login`,
     siteName: "FadeMeBets",
-    title: "About Us | FadeMeBets",
-    description:
-      "Discover the mission and story behind FadeMeBets, a sharp, insight-led community delivering profitable, data-backed betting signals and tools.",
-    
+    title: "Login | FadeMeBets",
+    description: "Access your FadeMeBets account for expert picks and betting tools.",
   },
   robots: {
-    index: true,
-    follow: true,
+    index: false,
+    follow: false,
     googleBot: {
-      index: true,
-      follow: true,
+      index: false,
+      follow: false,
       "max-video-preview": -1,
-      "max-image-preview": "large",
+      "max-image-preview": "none",
       "max-snippet": -1,
     },
   },
@@ -63,16 +55,15 @@ export const metadata: Metadata = {
 };
 
 
-export default function EVLayout({
+
+export default function LoginLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  return <section>
-    <Navbar />
-    {children}
-     <SubscriptionPlan />
-     <JoinCommunitySection/>
-    <Footer />
-    </section>
+  return (
+    <>
+      {children}
+    </>
+  );
 }

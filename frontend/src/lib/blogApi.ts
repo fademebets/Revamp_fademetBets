@@ -26,7 +26,6 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   }
 
   const data = await response.json()
-  console.log("API Response for", endpoint, ":", data) // Debug log
   return data
 }
 
@@ -141,6 +140,16 @@ export const blogApi = {
   }
 
   throw new Error("Unexpected response while fetching published blogs")
+},
+
+getAllPublishedBlogs: async (): Promise<Blog[]> => {
+  const response = await apiRequest(`/blogs/published?limit=1000`); // or remove limit param if your API defaults to "all"
+
+  if (response.success && Array.isArray(response.data)) {
+    return response.data.map(transformBlog);
+  }
+
+  throw new Error("Unexpected response while fetching all published blogs");
 },
 
 getBlogBySlug: async (slug: string): Promise<Blog> => {

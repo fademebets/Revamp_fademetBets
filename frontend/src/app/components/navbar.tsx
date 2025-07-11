@@ -9,7 +9,7 @@ import LanguageSelector from "./language-selector"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuthStore } from "@/store/auth-store"
 
-const navItems = ["Home", "About", "Services" ,"Parley Calc", "EV Calc",]
+const navItems = ["Home", "About", "Services" ,"Parley Calc", "EV Calc", "Blog"]
 
 export default function Navbar() {
   const [language, setLanguage] = useState("English")

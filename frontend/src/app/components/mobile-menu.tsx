@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Menu, Home, Info, Calculator, Briefcase, X} from "lucide-react"
+import { Menu, Home, Info, Calculator, Briefcase, X, Newspaper} from "lucide-react"
 import LanguageSelector from "./language-selector"
 import { Separator } from "@/components/ui/separator"
 import type { User } from "@/types/auth"
@@ -32,6 +32,9 @@ const getNavIcon = (item: string) => {
       return <Calculator className="h-4 w-4" />
       case "services":
       return <Briefcase className="h-4 w-4" />;
+      case "blog":
+    case "blogs":
+      return <Newspaper className="h-4 w-4" />;
     default:
       return null
   }

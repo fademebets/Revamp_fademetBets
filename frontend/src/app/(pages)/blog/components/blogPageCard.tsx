@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { BlogCard } from "../components/blog-card";
+import { BlogCard } from "./blog-card";
 import { blogApi } from "@/lib/blogApi"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Search, Filter, AlertCircle } from "lucide-react"

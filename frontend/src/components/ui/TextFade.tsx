@@ -36,7 +36,7 @@ export function TextFade({
     >
       {React.Children.map(children, (child) =>
         React.isValidElement(child) ? (
-          <motion.div variants={FADE_DOWN}>{child}</motion.div>
+          <motion.div>{child}</motion.div>
         ) : (
           child
         )
