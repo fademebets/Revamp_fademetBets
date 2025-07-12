@@ -72,24 +72,33 @@ exports.deleteUser = async (req, res) => {
 
 // Update user details
 exports.updateUser = async (req, res) => {
-  const { userId } = req.params
-  const updateData = req.body
+  const { userId } = req.params;
+  const updateData = req.body;
 
   try {
+    // Check if email is being updated
+    if (updateData.email) {
+      const existingUser = await User.findOne({ email: updateData.email });
+      if (existingUser && existingUser._id.toString() !== userId) {
+        return res.status(400).json({ message: "Email already in use by another account." });
+      }
+    }
+
     const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
       new: true,
       runValidators: true,
-    })
+    });
 
     if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" })
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json(updatedUser)
+    res.status(200).json(updatedUser);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update user", error })
+    res.status(500).json({ message: "Failed to update user", error });
   }
-}
+};
+
 
 
 exports.getUserByEmail = async (req, res) => {

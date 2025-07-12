@@ -89,8 +89,8 @@ exports.createCheckoutSession = async (req, res) => {
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
       discounts: couponId ? [{ coupon: couponId }] : [],
-      success_url: `https://revamp-fademebets.vercel.app/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: "https://revamp-fademebets.vercel.app",
+      success_url: `https://www.fademebets.com/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: "https://www.fademebets.com/",
        metadata: {
         plan, // this will be 'monthly' / 'quarterly' / 'yearly'
         email
