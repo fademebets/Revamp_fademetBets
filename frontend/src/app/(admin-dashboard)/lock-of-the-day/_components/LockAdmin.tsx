@@ -20,30 +20,17 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { useState } from "react"
 import { useCreateLock, useUpdateLock, useDeleteLock } from "@/hooks/useLocks"
-import type { Lock, CreateLockRequest, UpdateLockRequest } from "@/types/lock"
+import type { Lock, CreateLockRequest, UpdateLockRequest, LockFormData } from "@/types/lock"
 import { toast } from "sonner"
-
-// Form data interface
-interface LockFormData {
-  sport: string
-  customSport: string
-  game: string
-  pick: string
-  odds: string
-  confidence: string
-  units: string
-  analysis: string
-  status: string
-}
 
 // Sports options
 const sportsOptions = [
-  { value: "nfl", label: "NFL" },
-  { value: "nba", label: "NBA" },
-  { value: "mlb", label: "MLB" },
-  { value: "nhl", label: "NHL" },
-  { value: "mma", label: "MMA" },
-  { value: "esports", label: "Esports" },
+  { value: "NFL", label: "NFL" },
+  { value: "NBA", label: "NBA" },
+  { value: "MLB", label: "MLB" },
+  { value: "NHL", label: "NHL" },
+  { value: "MMA", label: "MMA" },
+  { value: "Esports", label: "Esports" },
   { value: "custom", label: "Custom" },
 ]
 
@@ -54,10 +41,17 @@ const statusOptions = [
   { value: "expired", label: "Expired" },
 ]
 
-// Utility function to safely display numbers
-const safeDisplayNumber = (value: any): string => {
-  if (value === null || value === undefined || isNaN(Number(value))) {
-    return "0"
+// Confidence options matching your API structure
+const confidenceOptions = [
+  { value: "High", label: "High" },
+  { value: "Medium", label: "Medium" },
+  { value: "Low", label: "Low" },
+]
+
+// Utility function to safely display values
+const safeDisplayValue = (value: any): string => {
+  if (value === null || value === undefined) {
+    return ""
   }
   return String(value)
 }
@@ -119,7 +113,7 @@ const LockForm = ({
             id="game"
             value={formData.game}
             onChange={(e) => onInputChange("game", e.target.value)}
-            placeholder="e.g., Boston Celtics vs Indiana Pacers"
+            placeholder="e.g., Lakers vs Heat"
           />
         </div>
         <div className="space-y-2">
@@ -130,7 +124,7 @@ const LockForm = ({
             id="pick"
             value={formData.pick}
             onChange={(e) => onInputChange("pick", e.target.value)}
-            placeholder="e.g., Jayson Tatum Over 24.5 Points"
+            placeholder="e.g., Lakers -3.5"
           />
         </div>
       </div>
@@ -144,39 +138,35 @@ const LockForm = ({
             id="odds"
             value={formData.odds}
             onChange={(e) => onInputChange("odds", e.target.value)}
-            placeholder="e.g., -110"
+            placeholder="e.g., +120"
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="confidence" className="text-sm font-medium">
             Confidence *
           </Label>
-          <div className="relative">
-            <Input
-              id="confidence"
-              value={formData.confidence}
-              onChange={(e) => onInputChange("confidence", e.target.value)}
-              placeholder="85"
-              type="number"
-              min="0"
-              max="100"
-              className="pr-8"
-            />
-            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">%</span>
-          </div>
+          <Select value={formData.confidence} onValueChange={(value) => onInputChange("confidence", value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select confidence" />
+            </SelectTrigger>
+            <SelectContent>
+              {confidenceOptions.map((confidence) => (
+                <SelectItem key={confidence.value} value={confidence.value}>
+                  {confidence.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="units" className="text-sm font-medium">
-            Units *
+          <Label htmlFor="unit" className="text-sm font-medium">
+            Unit *
           </Label>
           <Input
-            id="units"
-            type="number"
-            min="0"
-            step="0.1"
-            value={formData.units}
-            onChange={(e) => onInputChange("units", e.target.value)}
-            placeholder="1.5"
+            id="unit"
+            value={formData.unit}
+            onChange={(e) => onInputChange("unit", e.target.value)}
+            placeholder="e.g., 2u"
           />
         </div>
         <div className="space-y-2">
@@ -249,7 +239,6 @@ export function LockAdmin({ locks, currentPage, totalPages, totalLocks, onPageCh
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingLock, setEditingLock] = useState<Lock | null>(null)
-
   const [formData, setFormData] = useState<LockFormData>({
     sport: "",
     customSport: "",
@@ -257,7 +246,7 @@ export function LockAdmin({ locks, currentPage, totalPages, totalLocks, onPageCh
     pick: "",
     odds: "",
     confidence: "",
-    units: "",
+    unit: "",
     analysis: "",
     status: "draft",
   })
@@ -275,7 +264,7 @@ export function LockAdmin({ locks, currentPage, totalPages, totalLocks, onPageCh
       pick: "",
       odds: "",
       confidence: "",
-      units: "",
+      unit: "",
       analysis: "",
       status: "draft",
     })
@@ -283,13 +272,14 @@ export function LockAdmin({ locks, currentPage, totalPages, totalLocks, onPageCh
 
   const validateForm = (data: LockFormData): boolean => {
     const sport = data.sport === "custom" ? data.customSport : data.sport
+
     return !!(
       sport &&
       data.game &&
       data.pick &&
       data.odds &&
       data.confidence &&
-      data.units &&
+      data.unit &&
       data.analysis &&
       data.status
     )
@@ -298,22 +288,25 @@ export function LockAdmin({ locks, currentPage, totalPages, totalLocks, onPageCh
   // CRUD operations
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     if (!validateForm(formData)) {
       toast.error("Please fill in all required fields")
       return
     }
 
+    // Create request data matching your API structure
     const lockData: CreateLockRequest = {
       sport: formData.sport === "custom" ? formData.customSport : formData.sport,
       game: formData.game,
       pick: formData.pick,
-      odds: Number.parseFloat(formData.odds) || 0,
-      confidence: Number.parseInt(formData.confidence) || 0,
-      units: Number.parseFloat(formData.units) || 1,
+      odds: formData.odds,
+      confidence: formData.confidence,
+      unit: formData.unit, // This will be sent as "unit" to match your API
       analysis: formData.analysis,
       status: formData.status as "draft" | "active" | "expired",
-      date: new Date().toISOString(),
     }
+
+    console.log("Creating lock with data:", lockData)
 
     try {
       await createLockMutation.mutateAsync(lockData)
@@ -328,22 +321,30 @@ export function LockAdmin({ locks, currentPage, totalPages, totalLocks, onPageCh
 
   const handleEdit = (lock: Lock) => {
     setEditingLock(lock)
+
+    // Find matching sport option or use custom
+    const sportOption = sportsOptions.find((option) => option.value === lock.sport)
+
     setFormData({
-      sport: lock.sport.toLowerCase(),
-      customSport: "",
-      game: lock.game,
-      pick: lock.pick,
-      odds: safeDisplayNumber(lock.odds),
-      confidence: safeDisplayNumber(lock.confidence),
-      units: safeDisplayNumber(lock.units),
-      analysis: lock.analysis,
-      status: lock.status,
+      sport: sportOption ? sportOption.value : "custom",
+      customSport: sportOption ? "" : lock.sport,
+      game: lock.game || "",
+      pick: lock.pick || "",
+      odds: safeDisplayValue(lock.odds),
+      confidence: safeDisplayValue(lock.confidence),
+      unit: safeDisplayValue(lock.units), // Map from units to unit for form
+      analysis: lock.analysis || "",
+      status: lock.status || "draft",
     })
+
+    console.log("Editing lock with unit value:", lock.units)
+
     setIsEditDialogOpen(true)
   }
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
+
     if (!editingLock) return
 
     if (!validateForm(formData)) {
@@ -351,17 +352,19 @@ export function LockAdmin({ locks, currentPage, totalPages, totalLocks, onPageCh
       return
     }
 
+    // Create update request data matching your API structure
     const lockData: UpdateLockRequest = {
       sport: formData.sport === "custom" ? formData.customSport : formData.sport,
       game: formData.game,
       pick: formData.pick,
-      odds: Number.parseFloat(formData.odds) || 0,
-      confidence: Number.parseInt(formData.confidence) || 0,
-      units: Number.parseFloat(formData.units) || 1,
+      odds: formData.odds,
+      confidence: formData.confidence,
+      unit: formData.unit, // This will be sent as "unit" to match your API
       analysis: formData.analysis,
       status: formData.status as "draft" | "active" | "expired",
-      date: new Date().toISOString(),
     }
+
+    console.log("Updating lock with data:", lockData)
 
     try {
       await updateLockMutation.mutateAsync({ lockId: editingLock.id, lockData })
@@ -427,12 +430,11 @@ export function LockAdmin({ locks, currentPage, totalPages, totalLocks, onPageCh
           sport: lock.sport,
           game: lock.game,
           pick: lock.pick,
-          odds: lock.odds,
-          confidence: lock.confidence,
-          units: lock.units,
+          odds: safeDisplayValue(lock.odds),
+          confidence: safeDisplayValue(lock.confidence),
+          unit: safeDisplayValue(lock.units), // Map from units to unit for API
           analysis: lock.analysis,
           status: newStatus,
-          date: lock.createdDate,
         },
       })
       toast.success("Lock status updated successfully!")
@@ -492,9 +494,9 @@ export function LockAdmin({ locks, currentPage, totalPages, totalLocks, onPageCh
                   <TableCell className="font-medium">{lock.sport || "N/A"}</TableCell>
                   <TableCell className="max-w-[200px] truncate">{lock.game || "N/A"}</TableCell>
                   <TableCell className="max-w-[200px] truncate">{lock.pick || "N/A"}</TableCell>
-                  <TableCell>{safeDisplayNumber(lock.odds)}</TableCell>
-                  <TableCell>{safeDisplayNumber(lock.confidence)}%</TableCell>
-                  <TableCell>{safeDisplayNumber(lock.units)}</TableCell>
+                  <TableCell>{safeDisplayValue(lock.odds)}</TableCell>
+                  <TableCell>{safeDisplayValue(lock.confidence)}</TableCell>
+                  <TableCell>{safeDisplayValue(lock.units)}</TableCell>
                   <TableCell>{getStatusBadge(lock.status, lock)}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -565,7 +567,6 @@ export function LockAdmin({ locks, currentPage, totalPages, totalLocks, onPageCh
                     } else {
                       pageNum = currentPage - 2 + i
                     }
-
                     return (
                       <Button
                         key={pageNum}

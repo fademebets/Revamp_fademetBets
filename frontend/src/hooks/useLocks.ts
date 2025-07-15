@@ -45,13 +45,18 @@ export const useCreateLock = () => {
   const { addLock, setError } = useLockStore()
 
   return useMutation({
-    mutationFn: (lockData: CreateLockRequest) => lockApi.createLock(lockData),
+    mutationFn: (lockData: CreateLockRequest) => {
+      console.log("Creating lock with data:", lockData)
+      return lockApi.createLock(lockData)
+    },
     onSuccess: (response) => {
+      console.log("Lock created successfully:", response.data)
       addLock(response.data)
       // Invalidate and refetch locks query
       queryClient.invalidateQueries({ queryKey: [LOCKS_QUERY_KEY] })
     },
     onError: (error: Error) => {
+      console.error("Error creating lock:", error)
       setError(error.message)
     },
   })
@@ -62,14 +67,18 @@ export const useUpdateLock = () => {
   const { updateLock, setError } = useLockStore()
 
   return useMutation({
-    mutationFn: ({ lockId, lockData }: { lockId: string; lockData: UpdateLockRequest }) =>
-      lockApi.updateLock(lockId, lockData),
+    mutationFn: ({ lockId, lockData }: { lockId: string; lockData: UpdateLockRequest }) => {
+      console.log("Updating lock with data:", lockData)
+      return lockApi.updateLock(lockId, lockData)
+    },
     onSuccess: (response, variables) => {
+      console.log("Lock updated successfully:", response.data)
       updateLock(variables.lockId, response.data)
       // Invalidate and refetch locks query
       queryClient.invalidateQueries({ queryKey: [LOCKS_QUERY_KEY] })
     },
     onError: (error: Error) => {
+      console.error("Error updating lock:", error)
       setError(error.message)
     },
   })
@@ -82,11 +91,13 @@ export const useDeleteLock = () => {
   return useMutation({
     mutationFn: (lockId: string) => lockApi.deleteLock(lockId),
     onSuccess: (_, lockId) => {
+      console.log("Lock deleted successfully:", lockId)
       removeLock(lockId)
       // Invalidate and refetch locks query
       queryClient.invalidateQueries({ queryKey: [LOCKS_QUERY_KEY] })
     },
     onError: (error: Error) => {
+      console.error("Error deleting lock:", error)
       setError(error.message)
     },
   })

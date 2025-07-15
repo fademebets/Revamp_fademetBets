@@ -3,15 +3,24 @@ const Lock = require('../models/Lock');
 // ✅ Create Lock (Admin only)
 exports.createLock = async (req, res) => {
   try {
-    const { sport, game, pick, odds, confidence, analysis, status } = req.body;
+    const { sport, game, pick, odds, confidence, unit, analysis, status } = req.body;
 
-    if (!sport || !game || !pick || !odds || !confidence || !analysis) {
+    if (!sport || !game || !pick || !odds || !confidence || !unit || !analysis) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const newLock = await Lock.create({ sport, game, pick, odds, confidence, analysis, status });
-    res.status(201).json({ message: 'Lock created successfully', lock: newLock });
+    const newLock = await Lock.create({
+      sport,
+      game,
+      pick,
+      odds,
+      confidence,
+      unit,
+      analysis,
+      status,
+    });
 
+    res.status(201).json({ message: 'Lock created successfully', lock: newLock });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -21,6 +30,7 @@ exports.createLock = async (req, res) => {
 exports.editLock = async (req, res) => {
   try {
     const { id } = req.params;
+
     const updatedLock = await Lock.findByIdAndUpdate(id, req.body, { new: true });
 
     if (!updatedLock) {
@@ -28,7 +38,6 @@ exports.editLock = async (req, res) => {
     }
 
     res.json({ message: 'Lock updated successfully', lock: updatedLock });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -38,6 +47,7 @@ exports.editLock = async (req, res) => {
 exports.deleteLock = async (req, res) => {
   try {
     const { id } = req.params;
+
     const deletedLock = await Lock.findByIdAndDelete(id);
 
     if (!deletedLock) {
@@ -45,7 +55,6 @@ exports.deleteLock = async (req, res) => {
     }
 
     res.json({ message: 'Lock deleted successfully', lock: deletedLock });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -56,14 +65,12 @@ exports.getAllLocks = async (req, res) => {
   try {
     const locks = await Lock.find().sort({ date: -1 });
     res.json({ locks });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-
-// get lock for public
+// ✅ Get Active Lock of the Day (Public)
 exports.getActiveLockOfTheDay = async (req, res) => {
   try {
     const now = new Date();
@@ -71,7 +78,7 @@ exports.getActiveLockOfTheDay = async (req, res) => {
 
     const lock = await Lock.findOne({
       status: 'active',
-      date: { $gte: yesterday }
+      date: { $gte: yesterday },
     }).sort({ date: -1 });
 
     if (!lock) {
@@ -79,9 +86,7 @@ exports.getActiveLockOfTheDay = async (req, res) => {
     }
 
     res.json({ lock });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-

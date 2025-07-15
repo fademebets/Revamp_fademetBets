@@ -15,13 +15,6 @@ const createAuthHeaders = () => {
   }
 }
 
-// Safe number conversion utility
-const safeNumber = (value: any, defaultValue = 0): number => {
-  if (value === null || value === undefined) return defaultValue
-  const num = Number(value)
-  return isNaN(num) ? defaultValue : num
-}
-
 // Transform API response to match our Lock interface
 const transformLockData = (apiLock: any): Lock => {
   return {
@@ -29,10 +22,9 @@ const transformLockData = (apiLock: any): Lock => {
     sport: apiLock.sport || "Unknown",
     game: apiLock.game || "Unknown Game",
     pick: apiLock.pick || "Unknown Pick",
-    odds: safeNumber(apiLock.odds, 0),
-        confidence: apiLock.confidence || "Unknown",  // keep as string
-
-    units: safeNumber(apiLock.units, 1),
+    odds: String(apiLock.odds || ""), // Keep as string
+    confidence: String(apiLock.confidence || ""), // Keep as string
+    units: String(apiLock.unit || apiLock.units || ""), // Map unit to units for frontend
     analysis: apiLock.analysis || "",
     status: apiLock.status || "draft",
     createdDate: apiLock.date || apiLock.createdDate || new Date().toISOString(),
@@ -47,7 +39,6 @@ export const lockApi = {
   getAllLocks: async (page = 1, limit = 10): Promise<PaginatedResponse<Lock>> => {
     try {
       console.log(`Fetching locks: page=${page}, limit=${limit}`)
-
       const response = await fetch(`${API_BASE_URL}/locks/all?page=${page}&limit=${limit}`, {
         method: "GET",
         headers: createAuthHeaders(),
@@ -95,6 +86,7 @@ export const lockApi = {
   // Create new lock (Admin)
   createLock: async (lockData: CreateLockRequest): Promise<ApiResponse<Lock>> => {
     try {
+      console.log("Sending create request with data:", lockData)
       const response = await fetch(`${API_BASE_URL}/locks/create`, {
         method: "POST",
         headers: createAuthHeaders(),
@@ -107,6 +99,8 @@ export const lockApi = {
       }
 
       const data = await response.json()
+      console.log("Create response:", data)
+
       return {
         success: true,
         data: transformLockData(data.lock || data),
@@ -121,6 +115,7 @@ export const lockApi = {
   // Update lock (Admin)
   updateLock: async (lockId: string, lockData: UpdateLockRequest): Promise<ApiResponse<Lock>> => {
     try {
+      console.log("Sending update request with data:", lockData)
       const response = await fetch(`${API_BASE_URL}/locks/edit/${lockId}`, {
         method: "PUT",
         headers: createAuthHeaders(),
@@ -133,6 +128,8 @@ export const lockApi = {
       }
 
       const data = await response.json()
+      console.log("Update response:", data)
+
       return {
         success: true,
         data: transformLockData(data.lock || data),
@@ -169,48 +166,47 @@ export const lockApi = {
     }
   },
 
- // Get active lock of the day (Public)
-getActiveLock: async (): Promise<ApiResponse<Lock | null>> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/locks/active-today`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
+  // Get active lock of the day (Public)
+  getActiveLock: async (): Promise<ApiResponse<Lock | null>> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/locks/active-today`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        return {
+          success: false,
+          data: null,
+          message: errorData.message || `Failed to fetch active lock: ${response.statusText}`,
+        }
+      }
+
+      const data = await response.json()
+
+      if (!data?.lock) {
+        return {
+          success: false,
+          data: null,
+          message: "No active lock available today.",
+        }
+      }
+
+      return {
+        success: true,
+        data: transformLockData(data.lock),
+        message: data.message || "Active lock fetched successfully",
+      }
+    } catch (error) {
+      console.error("Error fetching active lock:", error)
       return {
         success: false,
         data: null,
-        message: errorData.message || `Failed to fetch active lock: ${response.statusText}`,
+        message: error instanceof Error ? error.message : "Failed to fetch active lock",
       }
     }
-
-    const data = await response.json()
-
-    if (!data?.lock) {
-      return {
-        success: false,
-        data: null,
-        message: "No active lock available today.",
-      }
-    }
-
-    return {
-      success: true,
-      data: transformLockData(data.lock),
-      message: data.message || "Active lock fetched successfully",
-    }
-  } catch (error) {
-    console.error("Error fetching active lock:", error)
-    return {
-      success: false,
-      data: null,
-      message: error instanceof Error ? error.message : "Failed to fetch active lock",
-    }
-  }
-}
-
+  },
 }

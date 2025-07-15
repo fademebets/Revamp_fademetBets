@@ -7,6 +7,7 @@ const lockSchema = new mongoose.Schema({
   odds: { type: String, required: true },
   confidence: { type: String, required: true },
   analysis: { type: String, required: true },
+  units: { type: Number, required: true }, // ✅ new field
   date: { type: Date, default: Date.now },
   status: { type: String, enum: ['active', 'expired', 'draft'], default: 'draft' }
 });

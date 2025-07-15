@@ -4,9 +4,9 @@ export interface Lock {
   sport: string
   game: string
   pick: string
-  odds: number
-  confidence: number
-  units: number
+  odds: string // Changed to string to match API
+  confidence: string // Changed to string to match API (High/Medium/Low)
+  units: string // Changed to string to match API (e.g., "2u")
   analysis: string
   status: "draft" | "active" | "expired"
   createdDate: string
@@ -15,29 +15,27 @@ export interface Lock {
   updatedAt: string
 }
 
-// API Request interfaces
+// API Request interfaces - matching your backend structure
 export interface CreateLockRequest {
   sport: string
   game: string
   pick: string
-  odds: number
-  confidence: number
-  units: number
+  odds: string // String to match your API
+  confidence: string // String to match your API (High/Medium/Low)
+  unit: string // Changed from units to unit to match your API
   analysis: string
   status: "draft" | "active" | "expired"
-  date: string
 }
 
 export interface UpdateLockRequest {
   sport: string
   game: string
   pick: string
-  odds: number
-  confidence: number
-  units: number
+  odds: string // String to match your API
+  confidence: string // String to match your API (High/Medium/Low)
+  unit: string // Changed from units to unit to match your API
   analysis: string
   status: "draft" | "active" | "expired"
-  date: string
 }
 
 // API Response interfaces
@@ -70,7 +68,7 @@ export interface LockFormData {
   pick: string
   odds: string
   confidence: string
-  units: string
+  unit: string // Changed from units to unit
   analysis: string
   status: string
 }
