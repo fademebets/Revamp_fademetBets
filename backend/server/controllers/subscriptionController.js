@@ -234,20 +234,22 @@ exports.confirmSubscription = async (req, res) => {
 exports.createCustomerPortal = async (req, res) => {
   try {
     const { email } = req.body;
+
     const user = await User.findOne({ email });
+
     if (!user || !user.stripeCustomerId) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: user.stripeCustomerId,
-      return_url: 'https://www.fademebets.com/dashboard',
+      return_url: 'https://www.fademebets.com/userProfile',
     });
 
     res.json({ url: portalSession.url });
 
   } catch (error) {
-    console.error(error);
+    console.error('Stripe Portal Error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };

@@ -1,7 +1,21 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { User, Lock, Shield, Camera, Eye, EyeOff, Smartphone, Mail, Phone, MapPin, Save, QrCode, Users, Copy, Loader2, Zap } from "lucide-react"
+import {
+  User,
+  Lock,
+  Eye,
+  EyeOff,
+  Mail,
+  Phone,
+  MapPin,
+  Save,
+  Users,
+  Copy,
+  Loader2,
+  Zap,
+  ExternalLink,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,10 +26,9 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { useProfileStore } from "@/store/user-profile-store";
-import { profileApi } from "@/lib/user-profile-api";
+import { useProfileStore } from "@/store/user-profile-store"
+import { profileApi } from "@/lib/user-profile-api"
 import { getCookie } from "cookies-next"
 
 export default function ProfilePage() {
@@ -45,50 +58,45 @@ export default function ProfilePage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [isUnsubscribed, setIsUnsubscribed] = useState(false)
-
   const [referralCode, setReferralCode] = useState("")
-const [referralExpiry, setReferralExpiry] = useState<string | null>(null)
-const [referralGenerating, setReferralGenerating] = useState(false)
+  const [referralExpiry, setReferralExpiry] = useState<string | null>(null)
+  const [referralGenerating, setReferralGenerating] = useState(false)
+  const [customerPortalUrl, setCustomerPortalUrl] = useState<string | null>(null)
+  const [isCreatingPortal, setIsCreatingPortal] = useState(false)
 
-const handleGenerateReferral = async () => {
-  try {
-    setReferralGenerating(true)
+  const handleGenerateReferral = async () => {
+    try {
+      setReferralGenerating(true)
+      const token = getCookie("auth-token")
+      if (!token) {
+        toast.error("No authentication token found.")
+        return
+      }
 
-    const token = getCookie("auth-token")
-    if (!token) {
-      toast.error("No authentication token found.")
-      return
+      const response = await fetch("https://revamp-fademetbets-backend.onrender.com/api/auth/generate-referral-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        toast.error(data.message || "Failed to generate referral code")
+        return
+      }
+
+      setReferralCode(data.referralCode)
+      setReferralExpiry(data.expiry)
+      toast.success("Referral code generated successfully! Valid for 3 days.")
+    } catch (err) {
+      console.error(err)
+      toast.error(err instanceof Error ? err.message : "Failed to generate referral code")
+    } finally {
+      setReferralGenerating(false)
     }
-
-    const response = await fetch("http://localhost:5000/api/auth/generate-referral-code", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      // ✅ Show API error in toast, no throw
-      toast.error(data.message || "Failed to generate referral code")
-      return
-    }
-
-    setReferralCode(data.referralCode)
-    setReferralExpiry(data.expiry)
-
-    toast.success("Referral code generated successfully! Valid for 3 days.")
-
-  } catch (err) {
-    console.error(err)
-    toast.error(err instanceof Error ? err.message : "Failed to generate referral code")
-  } finally {
-    setReferralGenerating(false)
   }
-}
-
 
   // Load profile data on component mount
   useEffect(() => {
@@ -173,8 +181,6 @@ const handleGenerateReferral = async () => {
     return `${user.firstName || ""} ${user.lastName || ""}`.trim()
   }
 
-
-
   const handleToggle = (value: boolean) => {
     if (isUnsubscribed) {
       toast.error("Subscription is already cancelled.")
@@ -185,18 +191,61 @@ const handleGenerateReferral = async () => {
     }
   }
 
+  // Add a new function to handle the customer portal API call
+  const createCustomerPortal = async (email: string): Promise<{ url: string }> => {
+    const response = await fetch("https://revamp-fademetbets-backend.onrender.com/api/subscription/create-customer-portal", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: email,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to create customer portal")
+    }
+
+    return data
+  }
+
+  // Update the handleUnsubscribe function to separate the two API calls
   const handleUnsubscribe = async () => {
+    if (!user?.email) {
+      toast.error("User email not found")
+      return
+    }
+
+    setIsCreatingPortal(true)
     try {
+      // Step 1: Call the unsubscribe API
       await profileApi.unsubscribe()
-      toast.success("Your subscription has been cancelled.")
+      toast.success("Subscription cancelled successfully!")
+
+      // Step 2: Create the customer portal for final cancellation
+      const portalData = await createCustomerPortal(user.email)
+      setCustomerPortalUrl(portalData.url)
+
       setIsUnsubscribed(true)
       setSmsNotifications(true) // keep it ON
-      setDialogOpen(false)
     } catch (err: any) {
-      toast.error(err.message)
+      console.error(err)
+      toast.error(err.message || "Failed to process subscription cancellation")
+    } finally {
+      setIsCreatingPortal(false)
+    }
+  }
+
+  const handlePortalRedirect = () => {
+    if (customerPortalUrl) {
+      window.open(customerPortalUrl, "_blank")
       setDialogOpen(false)
     }
   }
+
   if (isLoading && !user) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -266,38 +315,36 @@ const handleGenerateReferral = async () => {
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                  {/* Email */}
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="john.doe@example.com"
-                        value={user?.email || ""}
-                        className="pl-10"
-                        disabled
-                      />
-                    </div>
-                  </div>
-
-                  {/* Phone Number */}
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        placeholder="+1 (555) 123-4567"
-                        value={formData.phoneNumber}
-                        onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="john.doe@example.com"
+                      value={user?.email || ""}
+                      className="pl-10"
+                      disabled
+                    />
                   </div>
                 </div>
-
+                {/* Phone Number */}
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="phone"
+                      placeholder="+1 (555) 123-4567"
+                      value={formData.phoneNumber}
+                      onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="address">Address</Label>
                 <div className="relative">
@@ -397,71 +444,66 @@ const handleGenerateReferral = async () => {
             </CardContent>
           </Card>
 
-         <Card>
-  <CardHeader className="flex flex-row items-center gap-4">
-    <div className="p-2 rounded-md bg-red-50">
-      <Users className="h-5 w-5 text-red-600" />
-    </div>
-    <div className="flex-1">
-      <CardTitle className="text-lg">Referral Code</CardTitle>
-      <p className="text-sm text-muted-foreground">Invite a friend and both get rewards.</p>
-    </div>
-  </CardHeader>
-
-  <CardContent className="space-y-4">
-    <div className="flex items-center gap-2">
-      <Input
-        value={referralCode}
-        readOnly
-        placeholder="Your referral code will appear here"
-        className="flex-1"
-      />
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => {
-          navigator.clipboard.writeText(referralCode)
-          toast.success("Referral code copied!")
-        }}
-        disabled={!referralCode}
-      >
-        <Copy className="w-4 h-4 mr-1" />
-        Copy
-      </Button>
-    </div>
-
-    <Button
-      onClick={handleGenerateReferral}
-      className="w-full bg-red-600 hover:bg-red-700 text-white"
-      disabled={referralGenerating}
-    >
-      {referralGenerating ? (
-        <>
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          Generating...
-        </>
-      ) : (
-        <>
-          <Zap className="h-4 w-4 mr-2" />
-          Generate New Referral Code
-        </>
-      )}
-    </Button>
-
-   {referralExpiry && (
-  <p className="text-xs text-muted-foreground text-center">
-    Expires on:{" "}
-    {new Date(referralExpiry).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    })}
-  </p>
-)}
-
-  </CardContent>
-</Card>
-
+          <Card>
+            <CardHeader className="flex flex-row items-center gap-4">
+              <div className="p-2 rounded-md bg-red-50">
+                <Users className="h-5 w-5 text-red-600" />
+              </div>
+              <div className="flex-1">
+                <CardTitle className="text-lg">Referral Code</CardTitle>
+                <p className="text-sm text-muted-foreground">Invite a friend and both get rewards.</p>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={referralCode}
+                  readOnly
+                  placeholder="Your referral code will appear here"
+                  className="flex-1"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(referralCode)
+                    toast.success("Referral code copied!")
+                  }}
+                  disabled={!referralCode}
+                >
+                  <Copy className="w-4 h-4 mr-1" />
+                  Copy
+                </Button>
+              </div>
+              <Button
+                onClick={handleGenerateReferral}
+                className="w-full bg-red-600 hover:bg-red-700 text-white"
+                disabled={referralGenerating}
+              >
+                {referralGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4 mr-2" />
+                    Generate New Referral Code
+                  </>
+                )}
+              </Button>
+              {referralExpiry && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Expires on:{" "}
+                  {new Date(referralExpiry).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Profile Sidebar */}
@@ -480,7 +522,6 @@ const handleGenerateReferral = async () => {
                       {getInitials()}
                     </AvatarFallback>
                   </Avatar>
-
                 </div>
                 <div className="text-center">
                   <h3 className="font-semibold">{getFullName()}</h3>
@@ -491,7 +532,6 @@ const handleGenerateReferral = async () => {
                     {user?.subscriptionStatus === "active" ? "Active" : "Inactive"}
                   </Badge>
                 </div>
-
               </div>
             </CardContent>
           </Card>
@@ -509,19 +549,18 @@ const handleGenerateReferral = async () => {
                     {user?.subscriptionStatus === "active" ? "Premium" : "Expired"}
                   </Badge>
                 </div>
-               <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                   <span className="text-sm">Subscription End Date</span>
                   <span className="text-sm text-muted-foreground">
                     {user?.subscriptionEndDate
-                      ? new Date(user.subscriptionEndDate).toLocaleDateString('en-US', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric'
+                      ? new Date(user.subscriptionEndDate).toLocaleDateString("en-US", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
                         })
-                      : 'N/A'}
+                      : "N/A"}
                   </span>
                 </div>
-
                 <Separator />
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Email Verified</span>
@@ -555,26 +594,25 @@ const handleGenerateReferral = async () => {
                     checked={emailNotifications}
                     onCheckedChange={(value) => {
                       if (!value) {
-                        toast.error('You cannot disable email notifications.');
-                        return;  // Do not change state
+                        toast.error("You cannot disable email notifications.")
+                        return // Do not change state
                       }
-                      setEmailNotifications(value);
+                      setEmailNotifications(value)
                     }}
                     className="data-[state=checked]:bg-red-500"
                   />
-
                 </div>
                 <div className="flex items-center justify-between">
-        <div className="space-y-0.5">
-          <span className="text-sm font-medium">Subscription Cancel</span>
-          <p className="text-xs text-muted-foreground">Cancel your Subscription</p>
-        </div>
-        <Switch
-          checked={smsNotifications}
-          onCheckedChange={handleToggle}
-          className="data-[state=checked]:bg-red-500"
-        />
-      </div>
+                  <div className="space-y-0.5">
+                    <span className="text-sm font-medium">Subscription Cancel</span>
+                    <p className="text-xs text-muted-foreground">Cancel your Subscription</p>
+                  </div>
+                  <Switch
+                    checked={smsNotifications}
+                    onCheckedChange={handleToggle}
+                    className="data-[state=checked]:bg-red-500"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -582,27 +620,66 @@ const handleGenerateReferral = async () => {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Are you sure you want to cancel your subscription?</DialogTitle>
-      <p className="text-sm text-muted-foreground mt-2">
-        By canceling, you'll lose access to all premium features, including exclusive content, priority support, and future updates.
-      </p>
-      <p className="text-sm text-muted-foreground mt-1">
-        We’d be sad to see you go. If there’s anything we can improve, let us know — your feedback matters!
-      </p>
-    </DialogHeader>
-    <DialogFooter className="flex justify-end gap-2 mt-4">
-      <Button variant="outline" onClick={() => setDialogOpen(false)}>
-        Keep Subscription
-      </Button>
-      <Button className="bg-red-500 hover:bg-red-600" onClick={handleUnsubscribe}>
-        Yes, Cancel It
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {customerPortalUrl ? "Subscription Cancellation" : "Are you sure you want to cancel your subscription?"}
+            </DialogTitle>
+            {!customerPortalUrl ? (
+              <>
+                <p className="text-sm text-muted-foreground mt-2">
+                  By canceling, you'll lose access to all premium features, including exclusive content, priority
+                  support, and future updates.
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  We'd be sad to see you go. If there's anything we can improve, let us know — your feedback matters!
+                </p>
+              </>
+            ) : (
+              <div className="space-y-3 mt-2">
+                <p className="text-sm text-muted-foreground">
+                  Your subscription cancellation has been initiated successfully. Click the button below to complete the
+                  cancellation process through our secure billing portal.
+                </p>
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-sm text-blue-800 font-medium">
+                    Click on the link below to cancel your subscription:
+                  </p>
+                </div>
+              </div>
+            )}
+          </DialogHeader>
+          <DialogFooter className="flex justify-end gap-2 mt-4">
+            {!customerPortalUrl ? (
+              <>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Keep Subscription
+                </Button>
+                <Button className="bg-red-500 hover:bg-red-600" onClick={handleUnsubscribe} disabled={isCreatingPortal}>
+                  {isCreatingPortal ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Yes, Cancel It"
+                  )}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Close
+                </Button>
+                <Button className="bg-red-500 hover:bg-red-600" onClick={handlePortalRedirect}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Complete Cancellation
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
