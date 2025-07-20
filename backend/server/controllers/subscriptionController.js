@@ -16,6 +16,7 @@ const getReferralDiscount = (plan) => {
 };
 
 // Create Checkout Session
+// Create Checkout Session
 exports.createCheckoutSession = async (req, res) => {
   try {
     const { email, plan, referralCode } = req.body;
@@ -35,6 +36,23 @@ exports.createCheckoutSession = async (req, res) => {
       user = await User.create({ email });
     }
 
+    // ✅ Cancel existing subscription if active
+    if (user.subscriptionId) {
+      try {
+        const existingSubscription = await stripe.subscriptions.retrieve(user.subscriptionId);
+
+        if (existingSubscription && ['active', 'trialing'].includes(existingSubscription.status)) {
+          await stripe.subscriptions.update(user.subscriptionId, {
+            cancel_at_period_end: false,
+          });
+          await stripe.subscriptions.del(user.subscriptionId);
+        }
+      } catch (err) {
+        console.warn('⚠️ Failed to cancel previous subscription:', err.message);
+      }
+    }
+
+    // Stripe customer setup
     let customerId = user.stripeCustomerId;
     if (!customerId) {
       const customer = await stripe.customers.create({ email });
@@ -68,16 +86,14 @@ exports.createCheckoutSession = async (req, res) => {
       });
       couponId = coupon.id;
 
-      // ✅ Apply referral reward based on their subscriptionPlan (not subscriptionStatus)
+      // ✅ Apply referral reward based on their subscriptionPlan
       const discount = getReferralDiscount(referringUser.subscriptionPlan);
 
-      // Update referring user with reward details
       referringUser.hasReferredUser = true;
       referringUser.nextDiscountAmount = discount;
       referringUser.nextDiscountType = referringUser.subscriptionPlan;
       await referringUser.save();
 
-      // Mark new user as referred by this code
       user.referredBy = referralCode;
       await user.save();
     }
@@ -91,8 +107,8 @@ exports.createCheckoutSession = async (req, res) => {
       discounts: couponId ? [{ coupon: couponId }] : [],
       success_url: `https://www.fademebets.com/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: "https://www.fademebets.com/",
-       metadata: {
-        plan, // this will be 'monthly' / 'quarterly' / 'yearly'
+      metadata: {
+        plan, // 'monthly' / 'quarterly' / 'yearly'
         email
       }
     });
@@ -104,6 +120,8 @@ exports.createCheckoutSession = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
 // Confirm Subscription After Payment (Success Page Callback)
 exports.confirmSubscription = async (req, res) => {
   try {
