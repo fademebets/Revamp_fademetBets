@@ -40,7 +40,14 @@ app.use(cors({
 }));
 
 // ✅ Stripe Webhook route (MUST come before express.json())
-app.post('/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
+// ✅ Stripe Webhook route — must come BEFORE express.json()
+app.use('/webhook', express.raw({ type: 'application/json' }), (req, res, next) => {
+  req.rawBody = req.body; // 🔥 Attach raw body to request
+  next();
+});
+app.post('/webhook', handleStripeWebhook);
+
+
 
 // Body parser middleware
 app.use(express.json());
