@@ -12,7 +12,7 @@ const handleStripeWebhook = async (req, res) => {
   let event;
   try {
     console.log('⚙️ Constructing Stripe event with raw body...');
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.WEBHOOK_SECRET);
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     console.log('✅ Event constructed:', event.type);
   } catch (err) {
     console.error('❌ Webhook signature verification failed:', err.message);
