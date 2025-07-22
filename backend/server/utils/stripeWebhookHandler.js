@@ -1,73 +1,85 @@
 const Stripe = require('stripe');
 const User = require('../models/User');
 
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const handleStripeWebhook = async (req, res) => {
   const sig = req.headers['stripe-signature'];
+  console.log('🔔 Received webhook call');
+  console.log('📩 Signature:', sig);
 
   let event;
   try {
+    console.log('⚙️ Constructing Stripe event with raw body...');
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.WEBHOOK_SECRET);
-
+    console.log('✅ Event constructed:', event.type);
   } catch (err) {
-    console.error('Webhook Error:', err.message);
+    console.error('❌ Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   try {
-    // Handle subscription creation / update
-    if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.created') {
-      const subscription = event.data.object;
-      const customerId = subscription.customer;
+    switch (event.type) {
+      case 'customer.subscription.updated':
+      case 'customer.subscription.created':
+        const subscription = event.data.object;
+        const customerId = subscription.customer;
+        console.log(`🔄 Handling ${event.type} for customer ${customerId}`);
 
-      const user = await User.findOne({ stripeCustomerId: customerId });
-      if (user) {
-        user.subscriptionStatus = subscription.status;
-        user.subscriptionEndDate = new Date(subscription.current_period_end * 1000);
-        await user.save();
-      }
-    }
+        const user = await User.findOne({ stripeCustomerId: customerId });
+        if (user) {
+          user.subscriptionStatus = subscription.status;
+          user.subscriptionEndDate = new Date(subscription.current_period_end * 1000);
+          await user.save();
+          console.log(`✅ Updated subscription status for user: ${user.email}`);
+        } else {
+          console.warn(`⚠️ No user found with stripeCustomerId: ${customerId}`);
+        }
+        break;
 
-    // Handle payment failed
-    if (event.type === 'invoice.payment_failed') {
-      const subscriptionId = event.data.object.subscription;
-      const subs = await stripe.subscriptions.retrieve(subscriptionId);
-      const customerId = subs.customer;
+      case 'invoice.payment_failed':
+        const failedInvoice = event.data.object;
+        const subscriptionId = failedInvoice.subscription;
+        const subs = await stripe.subscriptions.retrieve(subscriptionId);
+        const failedCustomerId = subs.customer;
+        console.log(`🚫 Payment failed for subscription: ${subscriptionId}`);
 
-      const user = await User.findOne({ stripeCustomerId: customerId });
-      if (user) {
-        user.subscriptionStatus = 'past_due';
-        await user.save();
-      }
-    }
+        const failedUser = await User.findOne({ stripeCustomerId: failedCustomerId });
+        if (failedUser) {
+          failedUser.subscriptionStatus = 'past_due';
+          await failedUser.save();
+          console.log(`❗ Marked user as past_due: ${failedUser.email}`);
+        }
+        break;
 
-    // 🟥 Handle upcoming invoices — apply referral discount if available
-    if (event.type === 'invoice.upcoming') {
-      const invoice = event.data.object;
-      const customerId = invoice.customer;
+      case 'invoice.upcoming':
+        const invoice = event.data.object;
+        const invoiceCustomerId = invoice.customer;
+        const invoiceUser = await User.findOne({ stripeCustomerId: invoiceCustomerId });
 
-      const user = await User.findOne({ stripeCustomerId: customerId });
+        console.log(`📅 Upcoming invoice for: ${invoiceCustomerId}`);
 
-      if (user && user.nextDiscountAmount > 0) {
-        // Create one-time coupon based on nextDiscountAmount
-        const coupon = await stripe.coupons.create({
-          percent_off: user.nextDiscountAmount,
-          duration: 'once',
-        });
+        if (invoiceUser && invoiceUser.nextDiscountAmount > 0) {
+          const coupon = await stripe.coupons.create({
+            percent_off: invoiceUser.nextDiscountAmount,
+            duration: 'once',
+          });
 
-        // Attach discount to upcoming invoice
-        await stripe.invoices.update(invoice.id, {
-          discounts: [{ coupon: coupon.id }],
-        });
+          await stripe.invoices.update(invoice.id, {
+            discounts: [{ coupon: coupon.id }],
+          });
 
-        // Reset user's next discount since it's now used
-        user.nextDiscountAmount = 0;
-        user.nextDiscountType = null;
-        await user.save();
+          invoiceUser.nextDiscountAmount = 0;
+          invoiceUser.nextDiscountType = null;
+          await invoiceUser.save();
 
-        console.log(`✅ Applied ${coupon.percent_off}% discount to ${user.email}'s upcoming invoice`);
-      }
+          console.log(`✅ Applied ${coupon.percent_off}% discount to ${invoiceUser.email}'s upcoming invoice`);
+        }
+        break;
+
+      default:
+        console.log(`ℹ️ Unhandled event type: ${event.type}`);
     }
 
     res.status(200).json({ received: true });
@@ -77,5 +89,7 @@ const handleStripeWebhook = async (req, res) => {
     res.status(500).send('Webhook handler error');
   }
 };
+
+
 
 module.exports = handleStripeWebhook;
