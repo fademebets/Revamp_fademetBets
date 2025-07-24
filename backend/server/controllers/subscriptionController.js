@@ -43,7 +43,7 @@ exports.createCheckoutSession = async (req, res) => {
 
         if (existingSubscription && ['active', 'trialing'].includes(existingSubscription.status)) {
           await stripe.subscriptions.update(user.subscriptionId, {
-            cancel_at_period_end: false,
+            cancel_at_period_end: true,
           });
           await stripe.subscriptions.del(user.subscriptionId);
         }
@@ -268,6 +268,43 @@ exports.createCustomerPortal = async (req, res) => {
 
   } catch (error) {
     console.error('Stripe Portal Error:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+
+// Check if User Has Yearly Active Subscription
+exports.checkIfYearlySubscriber = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required.' });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const now = new Date();
+    const subEnd = new Date(user.subscriptionEndDate);
+
+    const isActive =
+      user.subscriptionStatus === 'active' &&
+      subEnd > now;
+
+    const isYearly = isActive && user.subscriptionPlan === 'yearly';
+
+    res.json({
+      isYearlySubscriber: isYearly,
+      subscriptionValidUntil: subEnd.toISOString(),
+      cancelledAtPeriodEnd: user.cancelAtPeriodEnd || false
+    });
+
+  } catch (error) {
+    console.error('❌ Error checking yearly subscription:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };

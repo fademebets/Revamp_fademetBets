@@ -43,15 +43,16 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: 'Incorrect email or password.' });
     }
 
-    // ✅ Corrected: use userId key in JWT payload
+    // JWT payload
     const tokenPayload = { userId: account._id, role };
     const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: '30d' });
 
-    // Prepare response
+    // Prepare response including userId (_id)
     const response = {
       message: `${role === 'admin' ? 'Admin' : 'User'} login successful.`,
       token,
-      role
+      role,
+      userId: account._id  // <--- add this line
     };
 
     // If user, add subscription status
