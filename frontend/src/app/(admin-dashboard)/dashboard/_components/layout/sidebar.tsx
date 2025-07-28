@@ -12,6 +12,7 @@ import {
   Users2,
   AudioWaveformIcon,
   PaperclipIcon,
+  MessageCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
@@ -32,6 +33,7 @@ const navLinks = [
       { title: "Overview", href: "/dashboard", icon: LayoutDashboardIcon },
       { title: "Lock of the Day", href: "/lock-of-the-day", icon: Lock },
       { title: "EV Picks", href: "/ev-picks", icon: AudioWaveformIcon },
+      { title: "Messages", href: "/admin-chat", icon: MessageCircle },
     ],
   },
   {

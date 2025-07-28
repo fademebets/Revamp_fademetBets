@@ -8,8 +8,9 @@ export const authUtils = {
     const token = getCookie("auth-token")
     const role = getCookie("user-role")
     const subscriptionStatus = getCookie("subscription-status")
+    const userId = getCookie("user-id")  // <-- Added userId
 
-    if (!token || !role) {
+    if (!token || !role || !userId) {
       return null
     }
 
@@ -17,6 +18,7 @@ export const authUtils = {
       token: token as string,
       role: role as "user" | "admin",
       subscriptionStatus: (subscriptionStatus as string) || "inactive",
+      userId: userId as string,           // <-- Return userId
     }
   },
 
@@ -37,6 +39,13 @@ export const authUtils = {
     })
 
     setCookie("subscription-status", user.subscriptionStatus, {
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    })
+
+    setCookie("user-id", user.userId, {    // <-- Save userId here
       maxAge: 30 * 24 * 60 * 60, // 30 days
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
@@ -72,6 +81,7 @@ export const authUtils = {
     deleteCookie("auth-token")
     deleteCookie("user-role")
     deleteCookie("subscription-status")
+    deleteCookie("user-id")   // <-- Also delete userId cookie
 
     // Clear any other potential auth-related cookies
     deleteCookie("remember-me")
@@ -81,5 +91,6 @@ export const authUtils = {
     deleteCookie("auth-token", { path: "/" })
     deleteCookie("user-role", { path: "/" })
     deleteCookie("subscription-status", { path: "/" })
+    deleteCookie("user-id", { path: "/" })
   },
 }

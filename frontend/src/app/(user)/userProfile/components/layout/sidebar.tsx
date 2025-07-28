@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Lock, Settings, User, Zap, X, ChevronRight } from "lucide-react"
+import { Lock, Settings, User, Zap, X, ChevronRight, MessagesSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { Switch } from "@/components/ui/switch"
@@ -37,6 +37,13 @@ const navItems = [
     url: "/user-lock-of-the-day",
     icon: Lock,
     description: "Today's guaranteed pick",
+
+  },
+  {
+    title: "Messages",
+    url: "/chat",
+    icon: MessagesSquare,
+    description: "Chat with FadeMeBets",
 
   },
 

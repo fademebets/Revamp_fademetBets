@@ -1,6 +1,7 @@
 export interface LoginRequest {
   email: string
   password: string
+
 }
 
 export interface LoginResponse {
@@ -8,10 +9,13 @@ export interface LoginResponse {
   token: string
   role: "user" | "admin"
   subscriptionStatus: string
+    userId: string;  // add userId here
+
 }
 
 export interface User {
   token: string
   role: "user" | "admin"
   subscriptionStatus: string
+  userId: string;  // add userId here
 }

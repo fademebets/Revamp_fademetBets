@@ -224,7 +224,7 @@ export default function RootLayout({
                 contactType: "customer service",
                 availableLanguage: "English",
               },
-              
+
             }),
           }}
         />
