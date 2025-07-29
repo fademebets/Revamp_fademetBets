@@ -178,6 +178,17 @@ export default function AdminChatPage() {
     }
   }, [selectedUserId])
 
+  useEffect(() => {
+  if (socketRef.current && socketConnected) {
+    const adminId = getAdminId()
+    if (adminId) {
+      console.log("Admin joining room:", adminId)
+      socketRef.current.emit("join", { userId: adminId })
+    }
+  }
+}, [socketConnected, getAdminId])
+
+
   // Fetch messages when user changes
   useEffect(() => {
     if (!selectedUserId) return
