@@ -5,9 +5,9 @@ import type { NextRequest } from "next/server";
 const ROUTE_PERMISSIONS = {
   PUBLIC: ["/", "/blogs", "/blog", "/login", "/parley-calc", "/ev-calc", "/success", "/forget-password", "/about", "/services", "/terms", "/privacy"],
 
-  USER: ["/userProfile", "/user-picks", "/user-lock-of-the-day"],
+  USER: ["/userProfile", "/user-picks", "/user-lock-of-the-day", "/chat"],
 
-  ADMIN: ["/dashboard", "/admin-blog", "/ev-picks", "/lock-of-the-day", "/all-user", "/all-sales", "/settings"],
+  ADMIN: ["/dashboard", "/admin-blog", "/ev-picks", "/lock-of-the-day", "/all-user", "/admin-chat", "/all-sales", "/settings"],
 };
 
 // Helper to check if a path matches a given pattern list

@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Send, Users, MessageCircle, AlertCircle } from "lucide-react"
 
-const SERVER_URL = "http://localhost:5000"
+const SERVER_URL = "https://revamp-fademetbets-backend.onrender.com"
 
 interface ChatRoom {
   userId: string

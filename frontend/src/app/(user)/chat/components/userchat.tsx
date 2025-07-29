@@ -7,7 +7,7 @@ import { io, type Socket } from "socket.io-client"
 import { getCookie } from "cookies-next"
 import type { Message, MessagePayload, SocketAuthData } from "@/types/chat"
 
-const SERVER_URL = "http://localhost:5000" // Change as needed
+const SERVER_URL = "https://revamp-fademetbets-backend.onrender.com" // Change as needed
 
 interface ServerToClientEvents {
   connect: () => void
