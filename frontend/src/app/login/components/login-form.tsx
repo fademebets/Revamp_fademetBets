@@ -88,6 +88,14 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
   sameSite: "strict",
 })
 
+setCookie("user-email", formData.email, {
+  maxAge: 30 * 24 * 60 * 60, // 30 days
+  httpOnly: false,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict",
+})
+
+
       // Set redirecting state
       setIsRedirecting(true)
 

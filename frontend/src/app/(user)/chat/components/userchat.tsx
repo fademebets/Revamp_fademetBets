@@ -6,6 +6,8 @@ import axios, { AxiosError } from "axios"
 import { io, type Socket } from "socket.io-client"
 import { getCookie } from "cookies-next"
 import type { Message, MessagePayload, SocketAuthData } from "@/types/chat"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 const SERVER_URL = "https://revamp-fademetbets-backend.onrender.com" // Change as needed
 
@@ -31,6 +33,41 @@ export default function UserChatPage() {
 
   const socketRef = useRef<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const router = useRouter() // Only if using Next.js
+
+ useEffect(() => {
+    const checkSubscription = async () => {
+      const email = getCookie("user-email")
+
+      if (!email || typeof email !== "string") {
+        toast.error("User email not found. Please log in.")
+        return
+      }
+
+      try {
+        const response = await axios.post("https://revamp-fademetbets-backend.onrender.com/api/subscription/check-yearly", {
+          email,
+        })
+
+        const { isYearlySubscriber } = response.data
+
+        if (!isYearlySubscriber) {
+          toast.error("Please purchase a yearly subscription to access this feature.")
+
+          // Redirect after short delay to allow toast to display
+          setTimeout(() => {
+            router.push("/userProfile") // If using Next.js
+            // OR: window.location.href = "/userProfile"; // If using plain React
+          }, 1500)
+        }
+      } catch (err) {
+        console.error("Subscription check failed", err)
+        toast.error("Unable to verify subscription. Please try again later.")
+      }
+    }
+
+    checkSubscription()
+  }, [])
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -39,6 +76,8 @@ export default function UserChatPage() {
   useEffect(() => {
     scrollToBottom()
   }, [messages, scrollToBottom])
+
+
 
   const getUserId = useCallback((): string | null => {
     if (typeof window === "undefined") return null
@@ -221,12 +260,19 @@ const handleSendMessage = useCallback(async () => {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {loading && (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-2 text-gray-600">Loading messages...</span>
-          </div>
-        )}
+       {loading && (
+  <div className="space-y-4">
+    {[...Array(5)].map((_, i) => (
+      <div
+        key={i}
+        className={`w-3/4 h-6 rounded-lg bg-gray-200 animate-pulse ${
+          i % 2 === 0 ? "ml-auto" : "mr-auto"
+        }`}
+      ></div>
+    ))}
+  </div>
+)}
+
 
         {messages.length === 0 && !loading && (
           <div className="text-center py-12 text-gray-500">No messages yet</div>

@@ -272,7 +272,6 @@ exports.createCustomerPortal = async (req, res) => {
   }
 };
 
-
 // Check if User Has Yearly Active Subscription
 exports.checkIfYearlySubscriber = async (req, res) => {
   try {
@@ -289,17 +288,22 @@ exports.checkIfYearlySubscriber = async (req, res) => {
     }
 
     const now = new Date();
-    const subEnd = new Date(user.subscriptionEndDate);
+
+    // Check if subscriptionEndDate exists and is a valid date
+    const subEnd = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
+
+    const isValidDate = subEnd instanceof Date && !isNaN(subEnd.getTime());
 
     const isActive =
       user.subscriptionStatus === 'active' &&
+      isValidDate &&
       subEnd > now;
 
     const isYearly = isActive && user.subscriptionPlan === 'yearly';
 
     res.json({
       isYearlySubscriber: isYearly,
-      subscriptionValidUntil: subEnd.toISOString(),
+      subscriptionValidUntil: isValidDate ? subEnd.toISOString() : null,
       cancelledAtPeriodEnd: user.cancelAtPeriodEnd || false
     });
 
