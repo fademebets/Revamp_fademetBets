@@ -1,5 +1,4 @@
 "use client"
-
 import type React from "react"
 import { useEffect, useState, useRef, useCallback } from "react"
 import axios, { AxiosError } from "axios"
@@ -30,44 +29,43 @@ export default function UserChatPage() {
   const [isConnected, setIsConnected] = useState(false)
   const [sendingMessage, setSendingMessage] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [hasSubscription, setHasSubscription] = useState<boolean | null>(null) // New state for subscription check
 
   const socketRef = useRef<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const router = useRouter() // Only if using Next.js
+  const router = useRouter()
 
- useEffect(() => {
+  useEffect(() => {
     const checkSubscription = async () => {
       const email = getCookie("user-email")
-
       if (!email || typeof email !== "string") {
         toast.error("User email not found. Please log in.")
+        setHasSubscription(false) // Indicate no subscription or login issue
+        router.push("/userProfile")
         return
       }
-
       try {
-        const response = await axios.post("https://revamp-fademetbets-backend.onrender.com/api/subscription/check-yearly", {
+        const response = await axios.post(`${SERVER_URL}/api/subscription/check-yearly`, {
           email,
         })
-
         const { isYearlySubscriber } = response.data
-
         if (!isYearlySubscriber) {
           toast.error("Please purchase a yearly subscription to access this feature.")
-
-          // Redirect after short delay to allow toast to display
-          setTimeout(() => {
-            router.push("/userProfile") // If using Next.js
-            // OR: window.location.href = "/userProfile"; // If using plain React
-          }, 1500)
+          setHasSubscription(false) // Indicate no subscription
+          // Redirect immediately
+          router.push("/userProfile")
+        } else {
+          setHasSubscription(true) // User has subscription
         }
       } catch (err) {
         console.error("Subscription check failed", err)
         toast.error("Unable to verify subscription. Please try again later.")
+        setHasSubscription(false) // Indicate check failed
+        router.push("/userProfile") // Redirect on error
       }
     }
-
     checkSubscription()
-  }, [])
+  }, [router])
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -76,8 +74,6 @@ export default function UserChatPage() {
   useEffect(() => {
     scrollToBottom()
   }, [messages, scrollToBottom])
-
-
 
   const getUserId = useCallback((): string | null => {
     if (typeof window === "undefined") return null
@@ -88,12 +84,11 @@ export default function UserChatPage() {
   useEffect(() => {
     const id = getUserId()
     setUserId(id)
-
     if (!id) setError("User ID not found. Please log in.")
   }, [getUserId])
 
   useEffect(() => {
-    if (!userId || typeof window === "undefined") return
+    if (!userId || typeof window === "undefined" || hasSubscription !== true) return // Only connect if subscription is true
 
     const token = getCookie("auth-token")
     if (!token) {
@@ -113,8 +108,7 @@ export default function UserChatPage() {
     socketRef.current.on("connect", () => {
       console.log("Connected:", socketRef.current?.id)
       setIsConnected(true)
-      setError(null)
-
+      setError(null) // Clear error on successful connection
       socketRef.current?.emit("join", { userId })
     })
 
@@ -149,12 +143,11 @@ export default function UserChatPage() {
     return () => {
       socketRef.current?.disconnect()
     }
-  }, [userId])
+  }, [userId, hasSubscription]) // Re-run effect if userId or hasSubscription changes [^1][^2]
 
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!userId || typeof window === "undefined") return
-
+      if (!userId || typeof window === "undefined" || hasSubscription !== true) return // Only fetch if subscription is true
       try {
         setLoading(true)
         const token = getCookie("auth-token")
@@ -162,58 +155,47 @@ export default function UserChatPage() {
           setError("No authentication token found.")
           return
         }
-
         const res = await axios.get<Message[]>(`${SERVER_URL}/api/chat/messages/${userId}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
-
         setMessages(res.data)
       } catch (err) {
         console.error("Fetch error:", err)
-        const msg =
-          err instanceof AxiosError ? err.response?.data?.message || err.message : "Fetch failed"
+        const msg = err instanceof AxiosError ? err.response?.data?.message || err.message : "Fetch failed"
         setError(msg)
       } finally {
         setLoading(false)
       }
     }
-
     fetchMessages()
-  }, [userId])
+  }, [userId, hasSubscription])
 
-const handleSendMessage = useCallback(async () => {
-  if (!messageInput.trim() || !socketRef.current || !isConnected || !userId) return;
-
-  setSendingMessage(true);
-
-  try {
-    const payload: MessagePayload = {
-      senderId: userId,
-      senderType: "user",
-      receiverId: "68611cc556f0f8ddfc3aba51", // admin ID
-      message: messageInput.trim(),
-    };
-
-    // Emit to server
-    socketRef.current.emit("send_message", payload);
-
-    // Optimistically add message to UI
-    const optimisticMessage: Message = {
-      ...payload,
-      createdAt: new Date().toISOString(),
-    };
-
-    setMessages((prev) => [...prev, optimisticMessage]);
-    setMessageInput("");
-  } catch (err) {
-    console.error("Send error:", err);
-    setError("Failed to send message");
-  } finally {
-    setSendingMessage(false);
-  }
-}, [messageInput, isConnected, userId]);
-
-
+  const handleSendMessage = useCallback(async () => {
+    if (!messageInput.trim() || !socketRef.current || !isConnected || !userId) return
+    setSendingMessage(true)
+    try {
+      const payload: MessagePayload = {
+        senderId: userId,
+        senderType: "user",
+        receiverId: "68611cc556f0f8ddfc3aba51", // admin ID
+        message: messageInput.trim(),
+      }
+      // Emit to server
+      socketRef.current.emit("send_message", payload)
+      // Optimistically add message to UI
+      const optimisticMessage: Message = {
+        ...payload,
+        createdAt: new Date().toISOString(),
+      }
+      setMessages((prev) => [...prev, optimisticMessage])
+      setMessageInput("")
+    } catch (err) {
+      console.error("Send error:", err)
+      setError("Failed to send message")
+    } finally {
+      setSendingMessage(false)
+    }
+  }, [messageInput, isConnected, userId])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -222,23 +204,22 @@ const handleSendMessage = useCallback(async () => {
     }
   }
 
-  if (error && !userId) {
+  // Render nothing or a loading state if subscription is not confirmed
+  if (hasSubscription === null) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full mx-4">
-          <h2 className="text-xl font-semibold text-red-600 mb-2 text-center">Connection Error</h2>
-          <p className="text-gray-600 mb-6 text-center">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
-          >
-            Retry
-          </button>
-        </div>
+        <div className="text-lg font-semibold text-gray-700">Checking subscription...</div>
       </div>
     )
   }
 
+  // If hasSubscription is false, the redirect should have already happened.
+  // This fallback ensures nothing is rendered if for some reason redirect didn't occur.
+  if (hasSubscription === false) {
+    return null
+  }
+
+  // Render the chat page content only if hasSubscription is true
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
@@ -252,32 +233,23 @@ const handleSendMessage = useCallback(async () => {
         </div>
         <div className="flex items-center space-x-2">
           <div className={`w-3 h-3 rounded-full ${isConnected ? "bg-green-500" : "bg-red-500"}`}></div>
-          <span className="text-sm text-gray-500">
-            {isConnected ? "Connected" : "Disconnected"}
-          </span>
+          <span className="text-sm text-gray-500">{isConnected ? "Connected" : "Disconnected"}</span>
         </div>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-       {loading && (
-  <div className="space-y-4">
-    {[...Array(5)].map((_, i) => (
-      <div
-        key={i}
-        className={`w-3/4 h-6 rounded-lg bg-gray-200 animate-pulse ${
-          i % 2 === 0 ? "ml-auto" : "mr-auto"
-        }`}
-      ></div>
-    ))}
-  </div>
-)}
-
-
-        {messages.length === 0 && !loading && (
-          <div className="text-center py-12 text-gray-500">No messages yet</div>
+        {loading && (
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className={`w-3/4 h-6 rounded-lg bg-gray-200 animate-pulse ${i % 2 === 0 ? "ml-auto" : "mr-auto"}`}
+              ></div>
+            ))}
+          </div>
         )}
-
+        {messages.length === 0 && !loading && <div className="text-center py-12 text-gray-500">No messages yet</div>}
         {messages.map((msg, idx) => {
           const isUser = msg.senderType === "user"
           return (
@@ -297,25 +269,34 @@ const handleSendMessage = useCallback(async () => {
             </div>
           )
         })}
-
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
       <div className="bg-white border-t border-gray-200 p-4">
+        {error && (
+          <div
+            className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded relative mb-3 text-sm"
+            role="alert"
+          >
+            <span className="block">{error}</span>
+          </div>
+        )}
         <div className="flex space-x-3">
           <input
             type="text"
             value={messageInput}
             onChange={(e) => setMessageInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isConnected ? "Type your message..." : "Connecting..."}
-            disabled={!isConnected || sendingMessage}
+            placeholder={
+              !userId ? "User ID missing. Please log in." : isConnected ? "Type your message..." : "Connecting..."
+            }
+            disabled={!isConnected || sendingMessage || !userId || !!error}
             className="flex-1 border px-4 py-2 rounded focus:outline-none focus:ring focus:ring-blue-500"
           />
           <button
             onClick={handleSendMessage}
-            disabled={!messageInput.trim() || !isConnected || sendingMessage}
+            disabled={!messageInput.trim() || !isConnected || sendingMessage || !userId || !!error}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {sendingMessage ? "Sending..." : "Send"}
