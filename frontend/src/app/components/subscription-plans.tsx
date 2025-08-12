@@ -65,7 +65,6 @@ export default function SubscriptionPlan() {
         "Basic analytics dashboard",
         "Lock of the day",
         "Community access",
-        "Mobile app access",
         "Unit management",
       ],
       cta: "Get Starter",
@@ -86,7 +85,7 @@ export default function SubscriptionPlan() {
         "Basic analytics dashboard",
         "Lock of the Day",
         "Community Access",
-        "Mobile app access",
+
         "Unit management",
         "Instant push notifications",
         "VIP chat feature",
@@ -112,7 +111,7 @@ export default function SubscriptionPlan() {
         "Basic Analytics Dashboard",
         "Lock of the Day",
         "Community Access",
-        "Mobile App Access",
+
         "Unit management",
         "Instant Push Notifications",
         "Priority Community Access",
@@ -643,7 +642,7 @@ export default function SubscriptionPlan() {
             </div>
           </div>
           <p className="max-w-xl mx-auto leading-relaxed">
-            Join over 12,000 successful bettors who trust FadeMeBets for consistent, profitable picks.
+            Join over 2000 successful bettors who trust FadeMeBets for consistent, profitable picks.
           </p>
         </div>
       </div>

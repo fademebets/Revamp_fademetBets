@@ -99,7 +99,7 @@ export default function Benefits() {
         <div className="text-center mt-16 space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-full text-red-600 text-sm font-medium">
             <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
-            Join 10,000+ profitable bettors
+            Join 2000+ profitable bettors
           </div>
 
           <p className="text-gray-600 max-w-xl mx-auto text-base md:text-lg">

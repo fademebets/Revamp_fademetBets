@@ -39,7 +39,7 @@ export default function HowWeWorks() {
                 ))}
               </div>
               <span className="text-sm font-medium text-red-600">
-                Trusted by 10,000+ bettors
+                Trusted by 1000+ bettors
               </span>
             </div>
 
