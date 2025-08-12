@@ -90,14 +90,14 @@ export default function Testimonial() {
     },
     {
       label: "Weekly Wins",
-      value: "63%",
+      value: "58%",
       description: "Win rate this month",
       icon: <Target className="w-5 h-5" />,
       color: "text-red-500",
     },
     {
       label: "Active Members",
-      value: "12,847",
+      value: "1500+",
       description: "Growing community",
       icon: <Users className="w-5 h-5" />,
       color: "text-red-500",
@@ -165,7 +165,7 @@ export default function Testimonial() {
         </div>
 
         {/* Testimonial Carousel */}
-        <div className="max-w-3xl mx-auto">
+        {/* <div className="max-w-3xl mx-auto">
           <Card className="bg-gray-50 border border-gray-200">
             <CardContent className="p-6 md:p-10 relative">
               <div className="text-center space-y-5">
@@ -207,17 +207,17 @@ export default function Testimonial() {
                 </div>
 
                 {/* Navigation */}
-                <div className="flex justify-center gap-3 mt-6">
+                {/* <div className="flex justify-center gap-3 mt-6">
                   <Button variant="ghost" size="icon" onClick={prevTestimonial} className="w-10 h-10 bg-red-100 text-red-600">
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
                   <Button variant="ghost" size="icon" onClick={nextTestimonial} className="w-10 h-10 bg-red-100 text-red-600">
                     <ChevronRight className="w-4 h-4" />
                   </Button>
-                </div>
+                </div> */}
 
                 {/* Dots */}
-                <div className="flex justify-center gap-1 mt-3">
+                {/* <div className="flex justify-center gap-1 mt-3">
                   {testimonials.map((_, index) => (
                     <button
                       key={index}
@@ -230,8 +230,8 @@ export default function Testimonial() {
                 </div>
               </div>
             </CardContent>
-          </Card>
-        </div>
+          </Card> */}
+        {/* </div> */}
 
         {/* Trust Indicators */}
         <div className="text-center mt-12 space-y-4">

@@ -119,11 +119,11 @@ export default function HowWeWorks() {
             <div className="flex items-center gap-6 pt-4">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-gray-500" />
-                <span className="text-gray-600">10,000+ Active Members</span>
+                <span className="text-gray-600">1600+ Active Members</span>
               </div>
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-red-500" />
-                <span className="text-gray-600">78% Win Rate</span>
+                <span className="text-gray-600">58% Win Rate</span>
               </div>
             </div>
           </div>
@@ -156,36 +156,39 @@ export default function HowWeWorks() {
               </Card>
             </div>
 
-            <Card className="bg-gray-50 border border-gray-200">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">
-                    Today&rsquo;s Featured Pick
-                  </h3>
-                  <span className="px-2 py-1 bg-red-100 text-red-600 text-xs font-medium rounded">
-                    +EV
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                    <div>
-                      <p className="font-medium">Lakers vs Warriors</p>
-                      <p className="text-sm text-gray-500">Over 225.5 Points</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-red-600">-110</p>
-                      <p className="text-xs text-gray-500">
-                        Expected Value: +12.3%
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <span>Confidence: High</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+         <Card className="bg-gray-50 border border-gray-200">
+  <CardContent className="p-6 space-y-4">
+    <div className="flex items-center justify-between">
+      <h3 className="font-semibold text-gray-900">
+        Today&rsquo;s Betting Insight
+      </h3>
+      <span className="px-2 py-1 bg-red-100 text-red-600 text-xs font-medium rounded">
+        Analysis
+      </span>
+    </div>
+    <div className="space-y-3">
+      <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+        <div>
+          <p className="font-medium">Lakers vs Warriors</p>
+          <p className="text-sm text-gray-500">
+            Team trends & recent performance breakdown
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="font-bold text-red-600">Read More</p>
+          <p className="text-xs text-gray-500">
+            Last updated: Today
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+        <span>Based on publicly available stats</span>
+      </div>
+    </div>
+  </CardContent>
+</Card>
+
 
             <Card className="bg-gray-50 border border-gray-200">
               <CardContent className="p-6">
